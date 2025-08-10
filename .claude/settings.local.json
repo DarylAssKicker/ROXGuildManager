@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(jq:*)",
+      "Bash(python3:*)",
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx tsc:*)",
+      "Bash(rm:*)",
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(redis-cli:*)",
+      "Bash(nc:*)",
+      "Bash(ss:*)",
+      "Bash(npm start)",
+      "Bash(npm run build:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(chmod:*)",
+      "Bash(dos2unix:*)",
+      "Bash(sed:*)",
+      "Bash(./deploy.sh)",
+      "Bash(ls:*)",
+      "Bash(cp:*)",
+      "Bash(npm:*)"
+    ],
+    "deny": []
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "name": "rox-guild-manager-server",
+  "version": "1.0.0",
+  "description": "ROX Guild Manager Server",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "watch": "nodemon --exec ts-node src/index.ts",
+    "debug": "node --inspect=0.0.0.0:9229 -r ts-node/register src/index.ts",
+    "debug:watch": "nodemon --inspect=0.0.0.0:9229 --exec ts-node src/index.ts"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^4.18.2",
+    "helmet": "^8.1.0",
+    "ioredis": "^5.3.2",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "multer": "^1.4.5-lts.1",
+    "sharp": "^0.34.3",
+    "tesseract.js": "^4.1.1",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.2",
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.17",
+    "@types/helmet": "^0.0.48",
+    "@types/jsonwebtoken": "^9.0.2",
+    "@types/morgan": "^1.9.10",
+    "@types/multer": "^1.4.13",
+    "@types/node": "^20.5.0",
+    "@types/uuid": "^10.0.0",
+    "nodemon": "^3.0.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
+  }
+}

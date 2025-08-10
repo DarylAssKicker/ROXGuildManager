@@ -1,0 +1,225 @@
+.screenshot-upload {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.upload-section {
+  text-align: center;
+  padding: 1.5rem;
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius-lg);
+  background: var(--gray-50);
+  margin-bottom: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.upload-section:hover {
+  border-color: var(--primary-500);
+  background: var(--primary-50);
+}
+
+.upload-section .ant-upload {
+  width: 100%;
+}
+
+.upload-section .ant-upload-drag {
+  border: none;
+  background: transparent;
+}
+
+.upload-section .ant-upload-drag:hover {
+  border: none;
+}
+
+/* Guild member card styles */
+.guild-member-card {
+  margin-bottom: 0.75rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  border: 1px solid var(--gray-200);
+}
+
+.guild-member-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.guild-member-card .ant-card-head {
+  background: var(--primary-500);
+  color: white;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.guild-member-card .ant-card-head-title {
+  color: white;
+}
+
+/* Tag styles */
+.ant-tag {
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  border: none;
+  font-size: 0.75rem;
+}
+
+/* Button styles */
+.ant-btn {
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  border: 1px solid var(--gray-300);
+}
+
+.ant-btn-primary {
+  background: var(--primary-500);
+  border: none;
+  color: white;
+}
+
+.ant-btn-primary:hover {
+  background: var(--primary-600);
+  box-shadow: var(--shadow-md);
+}
+
+/* Switch styles */
+.ant-switch {
+  background: var(--gray-300);
+}
+
+.ant-switch-checked {
+  background: var(--primary-500);
+}
+
+/* Card styles */
+.ant-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-200);
+}
+
+.ant-card-head {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+/* Tab styles */
+.ant-tabs-tab {
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  margin-right: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.ant-tabs-tab-active {
+  background: var(--primary-50);
+  color: var(--primary-600);
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-100);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-400);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .screenshot-upload {
+    padding: 10px;
+  }
+  
+  .upload-section {
+    padding: 15px;
+  }
+  
+  .ant-card {
+    margin-bottom: 10px;
+  }
+}
+
+/* Loading state styles */
+.uploading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(4px);
+}
+
+/* Status indicator */
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.status-indicator.success {
+  background: var(--success-500);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.status-indicator.error {
+  background: var(--error-500);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.status-indicator.warning {
+  background: var(--warning-500);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+/* Animation effects */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Tooltip styles */
+.ant-tooltip {
+  max-width: 300px;
+}
+
+.ant-tooltip-inner {
+  background: var(--gray-800);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  box-shadow: var(--shadow-lg);
+}

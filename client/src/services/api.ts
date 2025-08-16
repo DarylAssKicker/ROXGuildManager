@@ -126,6 +126,13 @@ export const aaApi = {
   // Get member's AA participation
   getMemberParticipation: (memberName: string) => apiClient.get(`/aa/member/${encodeURIComponent(memberName)}/participation`),
   
+  // Get all members' AA participation in one request
+  getAllMembersParticipation: () => apiClient.get('/aa/members/participation'),
+  
+  // Get specific members' AA participation
+  getMembersParticipation: (memberNames: string[]) => 
+    apiClient.post('/aa/members/participation', { memberNames }),
+  
   // Upload AA images for specified date
   uploadImages: (date: string, files: File[]) => {
     const formData = new FormData();
@@ -166,6 +173,13 @@ export const gvgApi = {
   
   // Get member's GVG participation
   getMemberParticipation: (memberName: string) => apiClient.get(`/gvg/member/${encodeURIComponent(memberName)}/participation`),
+  
+  // Get all members' GVG participation in one request
+  getAllMembersParticipation: () => apiClient.get('/gvg/members/participation'),
+  
+  // Get specific members' GVG participation
+  getMembersParticipation: (memberNames: string[]) => 
+    apiClient.post('/gvg/members/participation', { memberNames }),
 };
 
 // KVM related API
@@ -191,6 +205,13 @@ export const kvmApi = {
   
   // Get KVM image list for specified date
   getImages: (date: string) => apiClient.get(`/kvm/images/${date}`),
+  
+  // Get all members' KVM participation in one request
+  getAllMembersParticipation: () => apiClient.get('/kvm/members/participation'),
+  
+  // Get specific members' KVM participation
+  getMembersParticipation: (memberNames: string[]) => 
+    apiClient.post('/kvm/members/participation', { memberNames }),
 };
 
 // Template related API

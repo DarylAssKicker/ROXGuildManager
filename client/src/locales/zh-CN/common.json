@@ -164,7 +164,21 @@
       "createdAtUpdateSuccess": "创建时间更新成功",
       "createdAtUpdateFailed": "创建时间更新失败",
       "sortUpdateSuccess": "排序更新成功",
-      "sortUpdateFailed": "排序更新失败"
+      "sortUpdateFailed": "排序更新失败",
+      "refreshCache": "刷新缓存",
+      "refreshCacheData": "刷新缓存数据",
+      "cached": "已缓存",
+      "uncached": "未缓存",
+      "addSuccess": "添加成功",
+      "updateSuccess": "更新成功",
+      "submitError": "表单提交错误",
+      "batchAddSuccess": "批量添加成功！共添加 {success}/{total} 个成员",
+      "batchAddPartialError": "批量添加部分失败：{error}/{total} 个成员添加失败",
+      "batchAddFailed": "批量添加失败",
+      "confirmDeleteAll": "确认删除所有成员",
+      "confirmDeleteAllContent": "确定要删除所有 {count} 个成员吗？此操作不可恢复！",
+      "deleteAllSuccess": "所有成员删除成功",
+      "deleteAllFailed": "删除所有成员失败"
     },
     "role": {
       "leader": "会长",
@@ -228,11 +242,6 @@
       "buttons": {
         "confirm": "确定",
         "cancel": "取消"
-      },
-      "messages": {
-        "addSuccess": "添加成功",
-        "updateSuccess": "更新成功",
-        "submitError": "表单提交错误"
       }
     },
     "actions": {
@@ -249,37 +258,33 @@
     "saveError": "保存成员失败",
     "imageRecognition": "图片识别",
     "classDistribution": "职业分布",
-    "deleteAll": "删除所有成员",
-    "messages": {
-      "imageRecognitionSuccess": "图片识别成功，识别出 {count} 个成员",
-      "batchAddSuccess": "批量添加成功！共添加 {success}/{total} 个成员",
-      "batchAddPartialError": "批量添加部分失败：{error}/{total} 个成员添加失败",
-      "batchAddFailed": "批量添加失败",
-      "invalidMemberId": "无效的成员ID",
-      "nameUpdateSuccess": "姓名更新成功",
-      "nameUpdateFailed": "姓名更新失败",
-      "confirmDelete": "确认删除",
-      "confirmDeleteContent": "确定要删除成员 {name} 吗？",
-      "confirm": "确认",
-      "cancel": "取消",
-      "deleteSuccess": "删除成功",
-      "deleteFailed": "删除失败",
-      "confirmDeleteAll": "确认删除所有成员",
-      "confirmDeleteAllContent": "确定要删除所有 {count} 个成员吗？此操作不可恢复！",
-      "deleteAllSuccess": "所有成员删除成功",
-      "deleteAllFailed": "删除所有成员失败",
-      "loadFailed": "加载失败",
-      "supportInfo": "支持从截图识别公会成员信息"
-    }
+    "deleteAll": "删除所有成员"
   },
   "classSettings": {
     "title": "职业管理",
     "addClass": "添加职业",
     "editClass": "编辑职业",
+    "color": "颜色",
+    "noColor": "未设置",
+    "presetColors": "预设颜色",
     "columns": {
       "name": "中文名称",
       "nameEn": "英文名称",
       "category": "职业分类",
+      "actions": "操作",
+      "index": "序号",
+      "level": "等级",
+      "class": "职业",
+      "position": "职位",
+      "gender": "性别",
+      "sevenDayContribution": "7天贡献",
+      "totalContribution": "总贡献",
+      "onlineStatus": "在线状态"
+    },
+    "table": {
+      "name": "中文名称",
+      "nameEn": "英文名称",
+      "category": "分类",
       "actions": "操作"
     },
     "categories": {
@@ -314,18 +319,6 @@
       "edit": "编辑",
       "delete": "删除",
       "editName": "编辑姓名"
-    },
-    "columns": {
-      "index": "序号",
-      "name": "姓名",
-      "level": "等级",
-      "class": "职业",
-      "position": "职位",
-      "gender": "性别",
-      "sevenDayContribution": "7天贡献",
-      "totalContribution": "总贡献",
-      "onlineStatus": "在线状态",
-      "actions": "操作"
     },
     "role": {
       "leader": "会长",
@@ -450,7 +443,6 @@
     "memberCount": "成员数量",
     "date": "日期",
     "actions": "操作",
-    "details": "详情",
     "edit": "编辑",
     "delete": "删除",
     "confirmDelete": "确定要删除这条数据吗？",
@@ -482,10 +474,6 @@
     "guildPosition": "公会职位",
     "unmatched": "未匹配",
     "details": "详情",
-    "guildId": "公会ID",
-    "memberName": "姓名",
-    "guildPosition": "公会职位",
-    "unmatched": "未匹配",
     "matchedCount": "匹配"
   },
   "gvg": {
@@ -610,8 +598,6 @@
       "startAnalysis": "开始分析",
       "analyzing": "正在分析数据...",
       "absentMembersList": "未参加人员列表",
-      "guildId": "公会ID",
-      "memberName": "人员名称",
       "position": "职位",
       "kvmAbsentCount": "KVM未参加总数",
       "aaAbsentCount": "AA未参加总数",
@@ -721,42 +707,6 @@
     "simplifiedChinese": "简体中文",
     "traditionalChinese": "繁体中文"
   },
-  "classSettings": {
-    "title": "职业管理",
-    "addClass": "添加职业",
-    "editClass": "编辑职业",
-    "color": "颜色",
-    "noColor": "未设置",
-    "presetColors": "预设颜色",
-    "table": {
-      "name": "中文名称",
-      "nameEn": "英文名称",
-      "category": "分类",
-      "actions": "操作"
-    },
-    "categories": {
-      "basic": "基础职业",
-      "first": "一转职业",
-      "second": "二转职业",
-      "third": "三转职业",
-      "extended": "扩展职业",
-      "advanced": "高级职业",
-      "special": "特殊职业"
-    },
-    "form": {
-      "nameRequired": "请输入职业名称",
-      "namePlaceholder": "请输入职业名称"
-    },
-    "messages": {
-      "addSuccess": "职业添加成功",
-      "updateSuccess": "职业更新成功",
-      "deleteSuccess": "职业删除成功",
-      "saveFailed": "保存失败",
-      "deleteFailed": "职业删除失败",
-      "loadFailed": "加载职业数据失败",
-      "confirmDelete": "确定要删除这个职业吗？"
-    }
-  },
   "groupParty": {
     "title": "队伍配置",
     "createParty": "创建小队",
@@ -845,11 +795,8 @@
        "kvm": "KVM 队伍",
        "gvg": "GVG 队伍"
      },
-     "guildMembers": "公会成员",
      "dragToAssign": "拖拽成员到队伍中",
      "filterByClass": "筛选职业",
-     "allClasses": "全部职业",
-     "allMembersAssigned": "所有成员都已分配",
      "confirm": {
       "clearAllParties": "确认清空所有队伍",
       "clearAllPartiesContent": "此操作将清空所有队伍的成员分配，确定要继续吗？"

@@ -82,4 +82,10 @@ router.post('/images/:date/upload', upload.array('images', 10), aaController.upl
 // Get member's AA participation status
 router.get('/member/:memberName/participation', aaController.getMemberAAParticipation);
 
+// Get all members' AA participation status (batch)
+router.get('/members/participation', aaController.getAllMembersAAParticipation);
+
+// Get specific members' AA participation status (batch)
+router.post('/members/participation', aaController.getMembersAAParticipation);
+
 export default router;

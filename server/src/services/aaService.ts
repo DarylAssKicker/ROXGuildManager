@@ -336,6 +336,140 @@ class AAService {
   }
 
   /**
+   * Get all members' AA participation status in one request
+   */
+  async getAllMembersAAParticipation(userId: string, limit?: number): Promise<ApiResponse<{ [memberName: string]: { [date: string]: boolean } }>> {
+    try {
+      // Import guild service to get complete member list
+      const guildService = require('./guildService').default;
+      
+      // Get all guild members
+      const allGuildMembers = await guildService.getAllMembers(userId);
+      console.log('🔍 AA getAllMembers response:', { memberCount: allGuildMembers.length });
+      
+      // Get all AA dates
+      const datesResult = await this.getAllAADates(userId);
+      if (!datesResult.success || !datesResult.data) {
+        return {
+          success: true,
+          data: {},
+          message: 'No AA data available'
+        };
+      }
+
+      // Get recent dates (default to last 5 for AA)
+      const recentDates = limit ? datesResult.data.slice(-limit) : datesResult.data.slice(-5);
+      console.log('🔍 AA recent dates:', recentDates);
+      
+      const allParticipation: { [memberName: string]: { [date: string]: boolean } } = {};
+
+      // Initialize all guild members in participation data
+      allGuildMembers.forEach((member: any) => {
+        const memberName = member.name || member.memberName;
+        if (memberName) {
+          allParticipation[memberName] = {};
+          recentDates.forEach(date => {
+            allParticipation[memberName]![date] = false;
+          });
+        }
+      });
+
+      // Update participation data for actual participants
+      for (const date of recentDates) {
+        const aaDataResult = await this.getAADataByDate(userId, date);
+        if (aaDataResult.success && aaDataResult.data) {
+          const participants = aaDataResult.data.participants || [];
+          
+          // Mark participants as true for this date
+          participants.forEach(p => {
+            if (allParticipation[p.name]) {
+              allParticipation[p.name]![date] = true;
+            } else {
+              // Add participant not in guild member list
+              console.log(`🔍 AA participant ${p.name} not found in guild members, adding`);
+              allParticipation[p.name] = {};
+              recentDates.forEach(d => {
+                allParticipation[p.name]![d] = d === date;
+              });
+            }
+          });
+        }
+      }
+
+      return {
+        success: true,
+        data: allParticipation,
+        message: `Successfully retrieved AA participation for ${Object.keys(allParticipation).length} members`
+      };
+    } catch (error) {
+      console.error('Failed to get all members AA participation:', error);
+      return {
+        success: false,
+        error: 'Failed to get all members AA participation',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Get specific members' AA participation status
+   */
+  async getMembersAAParticipation(userId: string, memberNames: string[], limit?: number): Promise<ApiResponse<{ [memberName: string]: { [date: string]: boolean } }>> {
+    try {
+      // Get all AA dates
+      const datesResult = await this.getAllAADates(userId);
+      if (!datesResult.success || !datesResult.data) {
+        return {
+          success: true,
+          data: {},
+          message: 'No AA data available'
+        };
+      }
+
+      // Get recent dates (default to last 5 for AA)
+      const recentDates = limit ? datesResult.data.slice(-limit) : datesResult.data.slice(-5);
+      const membersParticipation: { [memberName: string]: { [date: string]: boolean } } = {};
+
+      // Initialize participation data for requested members
+      memberNames.forEach(memberName => {
+        membersParticipation[memberName] = {};
+      });
+
+      // Check participation status for each date
+      for (const date of recentDates) {
+        const aaDataResult = await this.getAADataByDate(userId, date);
+        if (aaDataResult.success && aaDataResult.data) {
+          const participants = aaDataResult.data.participants || [];
+          const participantNames = new Set(participants.map(p => p.name));
+          
+          // Check each requested member
+          memberNames.forEach(memberName => {
+            membersParticipation[memberName]![date] = participantNames.has(memberName);
+          });
+        } else {
+          // No data for this date, mark all as not participated
+          memberNames.forEach(memberName => {
+            membersParticipation[memberName]![date] = false;
+          });
+        }
+      }
+
+      return {
+        success: true,
+        data: membersParticipation,
+        message: `Successfully retrieved AA participation for ${memberNames.length} members`
+      };
+    } catch (error) {
+      console.error('Failed to get members AA participation:', error);
+      return {
+        success: false,
+        error: 'Failed to get members AA participation',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
    * Close Redis connection
    */
   async close(): Promise<void> {

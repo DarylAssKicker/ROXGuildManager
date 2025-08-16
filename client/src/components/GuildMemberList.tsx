@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Table, Tag, Button, Space, Tooltip, Modal, message, Input, Select, InputNumber, Typography } from 'antd';
 import type { ColumnType } from 'antd/es/table';
-import { EditOutlined, DeleteOutlined, CameraOutlined, PieChartOutlined, ExclamationCircleOutlined, PlusOutlined, CheckOutlined, CloseOutlined, EyeOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, CameraOutlined, PieChartOutlined, ExclamationCircleOutlined, PlusOutlined, CheckOutlined, CloseOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import { GuildMember } from '../types';
 import { useGuildMembers } from '../hooks/useGuildMembers';
+import { useOptimizedDataManager } from '../hooks/useOptimizedDataManager';
 import { useTranslation } from '../hooks/useTranslation';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import GuildMemberForm from './GuildMemberForm';
@@ -11,7 +12,6 @@ import EnhancedImageRecognition from './EnhancedImageRecognition';
 import ClassDistributionChart from './ClassDistributionChart';
 import EditableClass from './EditableClass';
 import EditableCreatedAt from './EditableCreatedAt';
-import { classesApi, aaApi, gvgApi } from '../services/api';
 
 // Editable name component
 interface EditableNameProps {
@@ -212,18 +212,28 @@ const { Title, Text } = Typography;
 const GuildMemberList: React.FC = () => {
   const { t } = useTranslation();
   const { t: i18nT } = useI18nTranslation();
-  const { members, loading, error, deleteMember, deleteAllMembers, fetchMembers, addMember, updateMember } = useGuildMembers();
+  const { members, loading: membersLoading, error, deleteMember, deleteAllMembers, fetchMembers, addMember, updateMember } = useGuildMembers();
+  
+  // Use optimized data management Hook
+  const {
+    classes,
+    aaParticipation,
+    gvgParticipation,
+    loading: dataLoading,
+    aaLoading,
+    gvgLoading,
+    refreshAllData,
+    clearParticipationCache,
+    getClassColor,
+    cacheStatus
+  } = useOptimizedDataManager(members);
+  
   const [editingMember, setEditingMember] = React.useState<GuildMember | null>(null);
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = React.useState(false);
   const [isImageRecognitionVisible, setIsImageRecognitionVisible] = React.useState(false);
   const [isClassDistributionVisible, setIsClassDistributionVisible] = React.useState(false);
   const [selectedClass, setSelectedClass] = React.useState<string | undefined>(undefined);
-  const [classes, setClasses] = useState<{id: string, name: string, color?: string}[]>([]);
-  const [aaParticipation, setAAParticipation] = useState<{ [memberName: string]: { [date: string]: boolean } }>({});
-  const [aaLoading, setAALoading] = useState(false);
-  const [gvgParticipation, setGVGParticipation] = useState<{ [memberName: string]: { [date: string]: boolean } }>({});
-  const [gvgLoading, setGVGLoading] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedMemberForDetail, setSelectedMemberForDetail] = useState<GuildMember | null>(null);
 
@@ -235,82 +245,20 @@ const GuildMemberList: React.FC = () => {
     [t('guildMember.role.member')]: 'green',
   };
 
-  // Load class configuration
-  const loadClasses = async () => {
+  // Function to manually refresh cache
+  const handleRefreshCache = async () => {
     try {
-      const response = await classesApi.getAll();
-      setClasses(response.data.data || []);
+      await refreshAllData();
+      message.success('Cache refreshed - Batch request optimization enabled');
     } catch (error) {
-      console.error('Failed to load class configuration:', error);
+      console.error('Failed to refresh cache:', error);
+      message.error('Failed to refresh cache');
     }
   };
 
-  // Load AA participation data
-  const loadAAParticipation = async () => {
-    if (members.length === 0) return;
-    
-    setAALoading(true);
-    const participationData: { [memberName: string]: { [date: string]: boolean } } = {};
-    
-    try {
-      // Get AA participation for each member
-      await Promise.all(
-        members.map(async (member) => {
-          try {
-            const response = await aaApi.getMemberParticipation(member.name);
-            if (response.data.success) {
-              participationData[member.name] = response.data.data || {};
-            }
-          } catch (error) {
-            console.error(`Failed to get AA participation for member ${member.name}:`, error);
-            participationData[member.name] = {};
-          }
-        })
-      );
-      
-      setAAParticipation(participationData);
-    } catch (error) {
-      console.error('Failed to load AA participation:', error);
-    } finally {
-      setAALoading(false);
-    }
-  };
-
-  // Load GVG participation data
-  const loadGVGParticipation = async () => {
-    if (members.length === 0) return;
-    
-    setGVGLoading(true);
-    const participationData: { [memberName: string]: { [date: string]: boolean } } = {};
-    
-    try {
-      // Get GVG participation for each member
-      await Promise.all(
-        members.map(async (member) => {
-          try {
-            const response = await gvgApi.getMemberParticipation(member.name);
-            if (response.data.success) {
-              participationData[member.name] = response.data.data || {};
-            }
-          } catch (error) {
-            console.error(`Failed to get GVG participation for member ${member.name}:`, error);
-            participationData[member.name] = {};
-          }
-        })
-      );
-      
-      setGVGParticipation(participationData);
-    } catch (error) {
-      console.error('Failed to load GVG participation:', error);
-    } finally {
-      setGVGLoading(false);
-    }
-  };
-
-  // Class tag color mapping
-  const getClassColor = (className: string) => {
-    const classInfo = classes.find(c => c.name === className);
-    const color = classInfo?.color || '#f0f0f0'; // Default light gray
+  // Class tag color mapping (using optimized method)
+  const getClassColorWithTransparency = (className: string) => {
+    const color = getClassColor(className);
     // Convert color to lighter background color
     return color + '40'; // Add transparency
   };
@@ -321,18 +269,7 @@ const GuildMemberList: React.FC = () => {
     'Female': 'pink',
   };
 
-  // Load class configuration when component mounts
-  useEffect(() => {
-    loadClasses();
-  }, []);
-
-  // Load AA and GVG participation when member data changes
-  useEffect(() => {
-    if (members.length > 0) {
-      loadAAParticipation();
-      loadGVGParticipation();
-    }
-  }, [members]);
+  // All data loading is now managed uniformly by useOptimizedDataManager
 
   // Get all class options
   const classOptions = useMemo(() => {
@@ -724,6 +661,15 @@ const GuildMemberList: React.FC = () => {
           >
             {t('guildMember.classDistribution')}
           </Button>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={handleRefreshCache}
+            loading={dataLoading}
+            style={{ marginRight: 8 }}
+            title={`${i18nT('guildMember.messages.refreshCacheData')} - Classes:${cacheStatus.classes ? t('guildMember.messages.cached') : t('guildMember.messages.uncached')} AA:${cacheStatus.aa ? t('guildMember.messages.cached') : t('guildMember.messages.uncached')} GVG:${cacheStatus.gvg ? t('guildMember.messages.cached') : t('guildMember.messages.uncached')}`}
+          >
+            {t('guildMember.messages.refreshCache')}
+          </Button>
           {/* Delete all members button is hidden */}
           {/* <Button
             danger
@@ -770,7 +716,7 @@ const GuildMemberList: React.FC = () => {
           columns={columns}
           dataSource={filteredMembers}
           rowKey="id"
-          loading={loading || aaLoading || gvgLoading}
+          loading={membersLoading || dataLoading}
           pagination={false}
           scroll={{ x: 1200, y: 'calc(100vh - 270px)' }}
           size="small"

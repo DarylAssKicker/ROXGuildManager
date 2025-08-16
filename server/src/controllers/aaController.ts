@@ -417,6 +417,84 @@ class AAController {
       });
     }
   }
+
+  /**
+   * Get all members' AA participation status in one request
+   */
+  async getAllMembersAAParticipation(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthenticated user',
+          message: 'Please login first'
+        });
+      }
+
+      // Parse limit parameter from query string
+      const limitParam = req.query.limit as string;
+      const limit = limitParam ? parseInt(limitParam) : undefined;
+
+      const result = await aaService.getAllMembersAAParticipation(req.user.userId, limit);
+      
+      if (result.success) {
+        return res.status(200).json(result);
+      } else {
+        return res.status(500).json(result);
+      }
+    } catch (error) {
+      console.error('Failed to get all members AA participation:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  /**
+   * Get specific members' AA participation status
+   */
+  async getMembersAAParticipation(req: Request<{}, {}, { memberNames: string[] }>, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthenticated user',
+          message: 'Please login first'
+        });
+      }
+
+      const { memberNames } = req.body;
+
+      if (!memberNames || !Array.isArray(memberNames) || memberNames.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing or invalid member names',
+          message: 'Please provide array of member names'
+        });
+      }
+
+      // Parse limit parameter from query string
+      const limitParam = req.query.limit as string;
+      const limit = limitParam ? parseInt(limitParam) : undefined;
+
+      const result = await aaService.getMembersAAParticipation(req.user.userId, memberNames, limit);
+      
+      if (result.success) {
+        return res.status(200).json(result);
+      } else {
+        return res.status(500).json(result);
+      }
+    } catch (error) {
+      console.error('Failed to get members AA participation:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
 }
 
 export default new AAController();

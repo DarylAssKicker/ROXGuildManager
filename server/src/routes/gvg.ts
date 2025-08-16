@@ -27,4 +27,10 @@ router.get('/images/:date', gvgController.getGVGImages);
 // Get member's GVG participation status
 router.get('/member/:memberName/participation', gvgController.getMemberGVGParticipation);
 
+// Get all members' GVG participation status (batch)
+router.get('/members/participation', gvgController.getAllMembersGVGParticipation);
+
+// Get specific members' GVG participation status (batch)
+router.post('/members/participation', gvgController.getMembersGVGParticipation);
+
 export default router;

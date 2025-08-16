@@ -160,7 +160,21 @@
       "cancel": "取消",
       "loadFailed": "載入失敗",
       "imageRecognitionSuccess": "成功識別並儲存了 {count} 個公會成員",
-      "supportInfo": "支援截圖、剪貼簿圖片識別公會成員"
+      "supportInfo": "支援截圖、剪貼簿圖片識別公會成員",
+      "refreshCache": "重新整理快取",
+      "refreshCacheData": "重新整理快取資料",
+      "cached": "已快取",
+      "uncached": "未快取",
+      "addSuccess": "添加成功",
+      "updateSuccess": "更新成功",
+      "submitError": "表單提交錯誤",
+      "batchAddSuccess": "批量添加成功！共添加 {success}/{total} 個成員",
+      "batchAddPartialError": "批量添加部分失敗：{error}/{total} 個成員添加失敗",
+      "batchAddFailed": "批量添加失敗",
+      "confirmDeleteAll": "確認刪除所有成員",
+      "confirmDeleteAllContent": "確定要刪除所有 {count} 個成員嗎？此操作不可恢復！",
+      "deleteAllSuccess": "所有成員刪除成功",
+      "deleteAllFailed": "刪除所有成員失敗"
     },
     "role": {
       "leader": "會長",
@@ -223,11 +237,6 @@
       "buttons": {
         "confirm": "確定",
         "cancel": "取消"
-      },
-      "messages": {
-        "addSuccess": "新增成功",
-        "updateSuccess": "更新成功",
-        "submitError": "表單提交錯誤"
       }
     },
     "actions": {
@@ -244,28 +253,7 @@
     "saveError": "儲存成員失敗",
     "imageRecognition": "圖片識別",
     "classDistribution": "職業分布",
-    "deleteAll": "刪除所有成員",
-    "messages": {
-      "imageRecognitionSuccess": "圖片識別成功，識別出 {count} 個成員",
-      "batchAddSuccess": "批量添加成功！共添加 {success}/{total} 個成員",
-      "batchAddPartialError": "批量添加部分失敗：{error}/{total} 個成員添加失敗",
-      "batchAddFailed": "批量添加失敗",
-      "invalidMemberId": "無效的成員ID",
-      "nameUpdateSuccess": "姓名更新成功",
-      "nameUpdateFailed": "姓名更新失敗",
-      "confirmDelete": "確認刪除",
-      "confirmDeleteContent": "確定要刪除成員 {name} 嗎？",
-      "confirm": "確認",
-      "cancel": "取消",
-      "deleteSuccess": "刪除成功",
-      "deleteFailed": "刪除失敗",
-      "confirmDeleteAll": "確認刪除所有成員",
-      "confirmDeleteAllContent": "確定要刪除所有 {count} 個成員嗎？此操作不可恢復！",
-      "deleteAllSuccess": "所有成員刪除成功",
-      "deleteAllFailed": "刪除所有成員失敗",
-      "loadFailed": "載入失敗",
-      "supportInfo": "支援從截圖識別公會成員資訊"
-    }
+    "deleteAll": "刪除所有成員"
   },
   "screenshot": {
     "title": "截圖識別",

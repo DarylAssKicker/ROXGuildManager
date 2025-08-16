@@ -25,7 +25,9 @@
       "Bash(./deploy.sh)",
       "Bash(ls:*)",
       "Bash(cp:*)",
-      "Bash(npm:*)"
+      "Bash(npm:*)",
+      "Bash(./start_client.sh:*)",
+      "Bash(./start_server.sh:*)"
     ],
     "deny": []
   }

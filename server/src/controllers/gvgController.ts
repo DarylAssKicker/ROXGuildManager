@@ -343,6 +343,76 @@ class GVGController {
       });
     }
   }
+
+  /**
+   * Get all members' GVG participation status in one request
+   */
+  async getAllMembersGVGParticipation(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthenticated user',
+          message: 'Please login first'
+        });
+      }
+
+      const result = await gvgService.getAllMembersGVGParticipation(req.user.userId);
+      
+      if (result.success) {
+        return res.status(200).json(result);
+      } else {
+        return res.status(500).json(result);
+      }
+    } catch (error) {
+      console.error('Failed to get all members GVG participation:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  /**
+   * Get specific members' GVG participation status
+   */
+  async getMembersGVGParticipation(req: Request<{}, {}, { memberNames: string[] }>, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthenticated user',
+          message: 'Please login first'
+        });
+      }
+
+      const { memberNames } = req.body;
+
+      if (!memberNames || !Array.isArray(memberNames) || memberNames.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing or invalid member names',
+          message: 'Please provide array of member names'
+        });
+      }
+
+      const result = await gvgService.getMembersGVGParticipation(req.user.userId, memberNames);
+      
+      if (result.success) {
+        return res.status(200).json(result);
+      } else {
+        return res.status(500).json(result);
+      }
+    } catch (error) {
+      console.error('Failed to get members GVG participation:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
 }
 
 export default new GVGController();

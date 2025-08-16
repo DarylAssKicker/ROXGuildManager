@@ -164,7 +164,21 @@
       "createdAtUpdateSuccess": "Created time updated successfully",
       "createdAtUpdateFailed": "Created time update failed",
       "sortUpdateSuccess": "Sort updated successfully",
-      "sortUpdateFailed": "Failed to update sort"
+      "sortUpdateFailed": "Failed to update sort",
+      "refreshCache": "Refresh Cache",
+      "refreshCacheData": "Refresh Cache Data",
+      "cached": "Cached",
+      "uncached": "Uncached",
+      "addSuccess": "Added successfully",
+      "updateSuccess": "Updated successfully",
+      "submitError": "Form submission error",
+      "batchAddSuccess": "Batch add successful! Added {success}/{total} members",
+      "batchAddPartialError": "Batch add partially failed: {error}/{total} members failed to add",
+      "batchAddFailed": "Batch add failed",
+      "confirmDeleteAll": "Confirm Delete All Members",
+      "confirmDeleteAllContent": "Are you sure you want to delete all {count} members? This action cannot be undone!",
+      "deleteAllSuccess": "All members deleted successfully",
+      "deleteAllFailed": "Failed to delete all members"
     },
     "role": {
       "leader": "Guild Leader",
@@ -228,11 +242,6 @@
       "buttons": {
         "confirm": "Confirm",
         "cancel": "Cancel"
-      },
-      "messages": {
-        "addSuccess": "Added successfully",
-        "updateSuccess": "Updated successfully",
-        "submitError": "Form submission error"
       }
     },
     "actions": {
@@ -249,28 +258,7 @@
     "saveError": "Failed to save member",
     "imageRecognition": "Image Recognition",
     "classDistribution": "Class Distribution",
-    "deleteAll": "Delete All Members",
-    "messages": {
-      "imageRecognitionSuccess": "Image recognition successful, {count} members identified",
-      "batchAddSuccess": "Batch add successful! Added {success}/{total} members",
-      "batchAddPartialError": "Batch add partially failed: {error}/{total} members failed to add",
-      "batchAddFailed": "Batch add failed",
-      "invalidMemberId": "Invalid member ID",
-      "nameUpdateSuccess": "Name updated successfully",
-      "nameUpdateFailed": "Name update failed",
-      "confirmDelete": "Confirm Delete",
-      "confirmDeleteContent": "Are you sure you want to delete member {name}?",
-      "confirm": "Confirm",
-      "cancel": "Cancel",
-      "deleteSuccess": "Deleted successfully",
-      "deleteFailed": "Delete failed",
-      "confirmDeleteAll": "Confirm Delete All Members",
-      "confirmDeleteAllContent": "Are you sure you want to delete all {count} members? This action cannot be undone!",
-      "deleteAllSuccess": "All members deleted successfully",
-      "deleteAllFailed": "Failed to delete all members",
-      "loadFailed": "Load failed",
-      "supportInfo": "Support guild member information recognition from screenshots"
-    }
+    "deleteAll": "Delete All Members"
   },
   "screenshot": {
     "title": "Screenshot Upload",

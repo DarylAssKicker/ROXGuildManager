@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -20,6 +21,24 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware configuration
 app.use(helmet()); // Security headers
+
+// Enable gzip compression for all responses
+app.use(compression({
+  // Compression level (1-9, 9 is best compression but slowest)
+  level: 6,
+  // Only compress responses that are at least this many bytes
+  threshold: 1024,
+  // Enable compression for these content types
+  filter: (req, res) => {
+    // Don't compress if client doesn't support it
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Use compression filter
+    return compression.filter(req, res);
+  }
+}));
+
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true,

@@ -351,6 +351,156 @@ class GVGService {
   }
 
   /**
+   * Get all members' GVG participation status in one request
+   */
+  async getAllMembersGVGParticipation(userId: string): Promise<ApiResponse<{ [memberName: string]: { [date: string]: boolean } }>> {
+    try {
+      // Import guild service to get complete member list
+      const guildService = require('./guildService').default;
+      
+      // Get all guild members
+      const allGuildMembers = await guildService.getAllMembers(userId);
+      console.log('🔍 GVG getAllMembers response:', { memberCount: allGuildMembers.length });
+      
+      // Get all GVG dates
+      const datesResponse = await this.getAllGVGDates(userId);
+      console.log('🔍 GVG getAllGVGDates response:', datesResponse);
+      
+      if (!datesResponse.success || !datesResponse.data) {
+        return {
+          success: true,
+          data: {},
+          message: 'No GVG data available'
+        };
+      }
+
+      // Get recent dates (last 2 for GVG)
+      const recentDates = datesResponse.data
+        .sort((a, b) => b.localeCompare(a))
+        .slice(0, 2);
+      
+      console.log('🔍 GVG recent dates:', recentDates);
+
+      const allParticipation: { [memberName: string]: { [date: string]: boolean } } = {};
+
+      // Initialize participation data for all guild members
+      allGuildMembers.forEach((member: any) => {
+        allParticipation[member.name] = {};
+      });
+
+      // Collect participation data for each date
+      for (const date of recentDates) {
+        const gvgDataResponse = await this.getGVGDataByDate(userId, date);
+        if (gvgDataResponse.success && gvgDataResponse.data) {
+          const gvgData = gvgDataResponse.data;
+          const nonParticipantNames = new Set((gvgData.non_participants || []).map((p: any) => p.name));
+          
+          // Set participation status for each member for this date
+          allGuildMembers.forEach((member: any) => {
+            if (nonParticipantNames.has(member.name)) {
+              allParticipation[member.name]![date] = false;
+            } else {
+              // Not in non-participants list, means participated
+              allParticipation[member.name]![date] = true;
+            }
+          });
+        } else {
+          // No GVG data for this date, assume all members participated
+          allGuildMembers.forEach((member: any) => {
+            allParticipation[member.name]![date] = true;
+          });
+        }
+      }
+
+      console.log('🔍 GVG getAllMembersGVGParticipation result:', {
+        memberCount: allGuildMembers.length,
+        recentDatesCount: recentDates.length,
+        recentDates: recentDates,
+        sampleData: Object.keys(allParticipation).slice(0, 3)
+      });
+
+      return {
+        success: true,
+        data: allParticipation,
+        message: `Successfully retrieved GVG participation for ${allGuildMembers.length} members`
+      };
+    } catch (error) {
+      console.error('Failed to get all members GVG participation:', error);
+      return {
+        success: false,
+        error: 'Failed to get all members GVG participation',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Get specific members' GVG participation status
+   */
+  async getMembersGVGParticipation(userId: string, memberNames: string[]): Promise<ApiResponse<{ [memberName: string]: { [date: string]: boolean } }>> {
+    try {
+      // Get all GVG dates
+      const datesResponse = await this.getAllGVGDates(userId);
+      if (!datesResponse.success || !datesResponse.data) {
+        return {
+          success: true,
+          data: {},
+          message: 'No GVG data available'
+        };
+      }
+
+      // Get recent dates (last 2 for GVG)
+      const recentDates = datesResponse.data
+        .sort((a, b) => b.localeCompare(a))
+        .slice(0, 2);
+
+      const membersParticipation: { [memberName: string]: { [date: string]: boolean } } = {};
+
+      // Initialize participation data for requested members
+      memberNames.forEach(memberName => {
+        membersParticipation[memberName] = {};
+      });
+
+      // Check participation status for each date
+      for (const date of recentDates) {
+        const gvgDataResponse = await this.getGVGDataByDate(userId, date);
+        if (gvgDataResponse.success && gvgDataResponse.data) {
+          const gvgData = gvgDataResponse.data;
+          const nonParticipantNames = new Set((gvgData.non_participants || []).map((p: any) => p.name));
+          
+          // Check each requested member
+          memberNames.forEach(memberName => {
+            if (nonParticipantNames.has(memberName)) {
+              membersParticipation[memberName]![date] = false;
+            } else {
+              // Not in non-participants list, assume participated
+              membersParticipation[memberName]![date] = true;
+            }
+          });
+        } else {
+          // No data for this date, assume all participated
+          memberNames.forEach(memberName => {
+            membersParticipation[memberName]![date] = true;
+          });
+        }
+      }
+
+      return {
+        success: true,
+        data: membersParticipation,
+        message: `Successfully retrieved GVG participation for ${memberNames.length} members`
+      };
+    } catch (error) {
+      console.error('Failed to get members GVG participation:', error);
+      return {
+        success: false,
+        error: 'Failed to get members GVG participation',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
    * Close Redis connection
    */
   async close(): Promise<void> {

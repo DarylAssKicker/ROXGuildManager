@@ -3,7 +3,7 @@ import { Select, message, Tag } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import { GuildMember } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
-import { classesApi } from '../services/api';
+import { globalClassesManager } from '../services/GlobalClassesManager';
 import { getClassColor } from '../utils/classColors';
 
 // Editable class component
@@ -29,14 +29,30 @@ const EditableClass: React.FC<EditableClassProps> = ({ className, record, onUpda
   // Load class data when component mounts
   useEffect(() => {
     loadClasses();
+    
+    // lissen classes change
+    const handleClassesChange = (newClasses: ClassInfo[]) => {
+      setClasses(newClasses);
+    };
+    
+    globalClassesManager.addListener(handleClassesChange);
+    
+    return () => {
+      globalClassesManager.removeListener(handleClassesChange);
+    };
   }, []);
 
-  // Load class data
+  // Load class data using global manager
   const loadClasses = async () => {
+    if (globalClassesManager.isClassesLoaded()) {
+      setClasses(globalClassesManager.getLoadedClasses());
+      return;
+    }
+    
     setLoadingClasses(true);
     try {
-      const response = await classesApi.getAll();
-      setClasses(response.data.data || []);
+      const classesData = await globalClassesManager.getClasses();
+      setClasses(classesData);
     } catch (error) {
       console.error('Failed to load class data:', error);
     } finally {
@@ -47,7 +63,10 @@ const EditableClass: React.FC<EditableClassProps> = ({ className, record, onUpda
   const handleEdit = () => {
     setIsEditing(true);
     setEditValue(className);
-    loadClasses();
+    // No need to reload classes every time, use global cache
+    if (classes.length === 0) {
+      loadClasses();
+    }
     setTimeout(() => {
       selectRef.current?.focus();
     }, 100);

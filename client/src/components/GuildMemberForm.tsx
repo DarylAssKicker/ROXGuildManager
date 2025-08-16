@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, InputNumber, DatePicker, message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { GuildMember } from '../types';
-import { classesApi } from '../services/api';
+import { globalClassesManager } from '../services/GlobalClassesManager';
 import dayjs from 'dayjs';
 
 interface ClassInfo {
@@ -33,12 +33,17 @@ const GuildMemberForm: React.FC<GuildMemberFormProps> = ({
   const [loadingClasses, setLoadingClasses] = useState(false);
   const isEditing = !!member;
 
-  // Load class data
+  // Load class data using global manager
   const loadClasses = async () => {
+    if (globalClassesManager.isClassesLoaded()) {
+      setClasses(globalClassesManager.getLoadedClasses());
+      return;
+    }
+    
     setLoadingClasses(true);
     try {
-      const response = await classesApi.getAll();
-      setClasses(response.data.data || []);
+      const classesData = await globalClassesManager.getClasses();
+      setClasses(classesData);
     } catch (error) {
       console.error('Failed to load class data:', error);
     } finally {

@@ -14,8 +14,8 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build TypeScript code using npx to ensure tsc is found
-RUN npx tsc
+# Build TypeScript code using npm script
+RUN npm run build
 
 # Stage 2: Production stage
 FROM node:18-alpine AS production
@@ -34,7 +34,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install production dependencies only
-RUN npm ci
+RUN npm ci --omit=dev
 
 # Copy compiled code from build stage
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist

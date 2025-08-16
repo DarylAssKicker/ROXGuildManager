@@ -125,6 +125,19 @@ export const aaApi = {
   
   // Get member's AA participation
   getMemberParticipation: (memberName: string) => apiClient.get(`/aa/member/${encodeURIComponent(memberName)}/participation`),
+  
+  // Upload AA images for specified date
+  uploadImages: (date: string, files: File[]) => {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('images', file);
+    });
+    return apiClient.post(`/aa/images/${date}/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 };
 
 // GVG related API

@@ -317,6 +317,68 @@ class AAController {
   }
 
   /**
+   * Upload AA images for specific date
+   */
+  async uploadAAImages(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthenticated user',
+          message: 'Please login first'
+        });
+      }
+
+      const { date } = req.params;
+      const files = req.files as Express.Multer.File[];
+
+      if (!date) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing date parameter',
+          message: 'Please provide date parameter'
+        });
+      }
+
+      if (!files || files.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'No files uploaded',
+          message: 'Please select images to upload'
+        });
+      }
+
+      // Process uploaded files
+      const uploadedImages = files.map(file => ({
+        filename: file.filename,
+        originalname: file.originalname,
+        path: `/images/AA/${date}/${file.filename}`,
+        size: file.size,
+        mimetype: file.mimetype,
+        created: new Date()
+      }));
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          date,
+          images: uploadedImages,
+          count: uploadedImages.length
+        },
+        message: `Successfully uploaded ${uploadedImages.length} image(s)`
+      });
+
+    } catch (error) {
+      console.error('Failed to upload AA images:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  /**
    * Get member's AA participation status
    */
   async getMemberAAParticipation(req: Request<{ memberName: string }>, res: Response) {

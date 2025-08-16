@@ -14,8 +14,8 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build TypeScript code
-RUN npm run build
+# Build TypeScript code using npx to ensure tsc is found
+RUN npx tsc
 
 # Stage 2: Production stage
 FROM node:18-alpine AS production

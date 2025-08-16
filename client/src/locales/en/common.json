@@ -630,6 +630,64 @@
     "defaultGVGTemplate": "Default GVG Template",
     "defaultAATemplate": "Default AA Template"
   },
+  "subAccount": {
+    "title": "Sub-Account",
+    "createSubAccount": "Create Sub-Account",
+    "editSubAccount": "Edit Sub-Account",
+    "createNewSubAccount": "Create New Sub-Account",
+    "username": "Username",
+    "password": "Password",
+    "passwordOptional": "Password (leave empty to keep unchanged)",
+    "role": "Role",
+    "createdAt": "Created At",
+    "lastLoginAt": "Last Login",
+    "neverLoggedIn": "Never logged in",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "update": "Update",
+    "create": "Create",
+    "cancel": "Cancel",
+    "roles": {
+      "editor": "Editor",
+      "viewer": "Viewer",
+      "editorDescription": "Editor (Editor)",
+      "viewerDescription": "Viewer (Viewer)"
+    },
+    "permissions": {
+      "title": "Permission Description",
+      "viewer": "Can only view AA, GVG, KVM data and guild member information, cannot make any modifications.",
+      "editor": "Can view all data, import new AA, GVG, KVM data, manage team configurations, but cannot delete historical records.",
+      "owner": "Has full control, including managing sub-accounts and deleting data."
+    },
+    "messages": {
+      "updateSuccess": "Sub-account updated successfully!",
+      "createSuccess": "Sub-account created successfully!",
+      "deleteSuccess": "Sub-account deleted successfully!",
+      "updateFailed": "Update failed",
+      "createFailed": "Creation failed",
+      "deleteFailed": "Deletion failed",
+      "loadFailed": "Failed to load sub-accounts"
+    },
+    "confirmDelete": "Are you sure you want to delete sub-account \"{username}\"?",
+    "confirmDeleteDescription": "This action cannot be undone",
+    "noSubAccounts": "No sub-accounts",
+    "noSubAccountsDescription": "Click \"Create Sub-Account\" button to start adding sub-accounts",
+    "accessDenied": {
+      "title": "Access Denied",
+      "description": "Only the main account (Owner) can manage sub-accounts.",
+      "currentAccount": "Current account information:",
+      "username": "Username: {username}",
+      "role": "Role: {role}"
+    },
+    "form": {
+      "usernameRequired": "Please enter username",
+      "passwordRequired": "Please enter password",
+      "roleRequired": "Please select role",
+      "usernamePlaceholder": "Please enter username",
+      "passwordPlaceholder": "Please enter password"
+    }
+  },
   "classSettings": {
     "title": "Class Management",
     "addClass": "Add Class",
@@ -752,5 +810,10 @@
      "dragToAssign": "Drag members to parties",
      "filterByClass": "Filter by Class",
      "allClasses": "All Classes"
+  },
+  "appInfo": {
+    "title": "App Information",
+    "developer": "Developer:",
+    "awsDeployment": "AWS Deployment:"
   }
 }

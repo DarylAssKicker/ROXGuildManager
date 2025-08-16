@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import aaController from '../controllers/aaController';
+import { requirePermission } from '../middleware/permissionMiddleware';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -55,37 +56,37 @@ const upload = multer({
 
 const router = Router();
 
-// Import AA data
-router.post('/import', aaController.importAAData);
+// Import AA data (create permission required)
+router.post('/import', requirePermission('aa', 'create'), aaController.importAAData);
 
-// Get AA data for specific date
-router.get('/date/:date', aaController.getAADataByDate);
+// Get AA data for specific date (read permission required)
+router.get('/date/:date', requirePermission('aa', 'read'), aaController.getAADataByDate);
 
-// Get AA data within date range
-router.get('/range', aaController.getAADataByDateRange);
+// Get AA data within date range (read permission required)
+router.get('/range', requirePermission('aa', 'read'), aaController.getAADataByDateRange);
 
-// Get all AA data date list
-router.get('/dates', aaController.getAllAADates);
+// Get all AA data date list (read permission required)
+router.get('/dates', requirePermission('aa', 'read'), aaController.getAllAADates);
 
-// Delete AA data for specific date
-router.delete('/date/:date', aaController.deleteAAData);
+// Delete AA data for specific date (delete permission required)
+router.delete('/date/:date', requirePermission('aa', 'delete'), aaController.deleteAAData);
 
-// Get AA data statistics
-router.get('/statistics', aaController.getAAStatistics);
+// Get AA data statistics (read permission required)
+router.get('/statistics', requirePermission('aa', 'read'), aaController.getAAStatistics);
 
-// Get AA image list for specific date
-router.get('/images/:date', aaController.getAAImages);
+// Get AA image list for specific date (read permission required)
+router.get('/images/:date', requirePermission('aa', 'read'), aaController.getAAImages);
 
-// Upload AA images for specific date
-router.post('/images/:date/upload', upload.array('images', 10), aaController.uploadAAImages);
+// Upload AA images for specific date (create permission required)
+router.post('/images/:date/upload', requirePermission('aa', 'create'), upload.array('images', 10), aaController.uploadAAImages);
 
-// Get member's AA participation status
-router.get('/member/:memberName/participation', aaController.getMemberAAParticipation);
+// Get member's AA participation status (read permission required)
+router.get('/member/:memberName/participation', requirePermission('aa', 'read'), aaController.getMemberAAParticipation);
 
-// Get all members' AA participation status (batch)
-router.get('/members/participation', aaController.getAllMembersAAParticipation);
+// Get all members' AA participation status (read permission required)
+router.get('/members/participation', requirePermission('aa', 'read'), aaController.getAllMembersAAParticipation);
 
-// Get specific members' AA participation status (batch)
-router.post('/members/participation', aaController.getMembersAAParticipation);
+// Get specific members' AA participation status (read permission required)
+router.post('/members/participation', requirePermission('aa', 'read'), aaController.getMembersAAParticipation);
 
 export default router;

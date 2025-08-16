@@ -329,4 +329,37 @@ export const reinitializeOCR = async () => {
   return response.data;
 };
 
+// Sub-account management API
+export const subAccountApi = {
+  // Get all sub-accounts
+  getAll: () => apiClient.get('/sub-accounts'),
+  
+  // Create sub-account
+  create: (data: {
+    username: string;
+    password: string;
+    role: 'editor' | 'viewer';
+    permissions?: Array<{
+      resource: string;
+      actions: string[];
+    }>;
+  }) => apiClient.post('/sub-accounts', data),
+  
+  // Update sub-account
+  update: (id: string, data: {
+    password?: string;
+    role?: 'editor' | 'viewer';
+    permissions?: Array<{
+      resource: string;
+      actions: string[];
+    }>;
+  }) => apiClient.put(`/sub-accounts/${id}`, data),
+  
+  // Delete sub-account
+  delete: (id: string) => apiClient.delete(`/sub-accounts/${id}`),
+  
+  // Get current user permissions
+  getMyPermissions: () => apiClient.get('/sub-accounts/me/permissions')
+};
+
 export default apiClient;

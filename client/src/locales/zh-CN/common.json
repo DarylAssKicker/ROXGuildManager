@@ -801,5 +801,68 @@
       "clearAllParties": "确认清空所有队伍",
       "clearAllPartiesContent": "此操作将清空所有队伍的成员分配，确定要继续吗？"
     }
+  },
+  "subAccount": {
+    "title": "子账号管理",
+    "createSubAccount": "创建子账号",
+    "editSubAccount": "编辑子账号",
+    "createNewSubAccount": "创建新子账号",
+    "username": "用户名",
+    "password": "密码",
+    "passwordOptional": "密码（留空表示不修改）",
+    "role": "角色",
+    "createdAt": "创建时间",
+    "lastLoginAt": "最后登录",
+    "neverLoggedIn": "从未登录",
+    "actions": "操作",
+    "edit": "编辑",
+    "delete": "删除",
+    "update": "更新",
+    "create": "创建",
+    "cancel": "取消",
+    "roles": {
+      "editor": "编辑者",
+      "viewer": "查看者",
+      "editorDescription": "编辑者 (Editor)",
+      "viewerDescription": "查看者 (Viewer)"
+    },
+    "permissions": {
+      "title": "权限说明",
+      "viewer": "只能查看AA、GVG、KVM数据和公会成员信息，无法进行任何修改操作。",
+      "editor": "可以查看所有数据，导入新的AA、GVG、KVM数据，管理队伍配置，但不能删除历史记录。",
+      "owner": "拥有完全控制权，包括管理子账号和删除数据。"
+    },
+    "messages": {
+      "updateSuccess": "子账号更新成功！",
+      "createSuccess": "子账号创建成功！",
+      "deleteSuccess": "子账号删除成功！",
+      "updateFailed": "更新失败",
+      "createFailed": "创建失败",
+      "deleteFailed": "删除失败",
+      "loadFailed": "加载子账号失败"
+    },
+    "confirmDelete": "确定要删除子账号 \"{username}\" 吗？",
+    "confirmDeleteDescription": "此操作不可撤销",
+    "noSubAccounts": "暂无子账号",
+    "noSubAccountsDescription": "点击\"创建子账号\"按钮开始添加子账号",
+    "accessDenied": {
+      "title": "权限不足",
+      "description": "只有主账号（Owner）才能管理子账号。",
+      "currentAccount": "当前账号信息：",
+      "username": "用户名: {username}",
+      "role": "角色: {role}"
+    },
+    "form": {
+      "usernameRequired": "请输入用户名",
+      "passwordRequired": "请输入密码",
+      "roleRequired": "请选择角色",
+      "usernamePlaceholder": "请输入用户名",
+      "passwordPlaceholder": "请输入密码"
+    }
+  },
+  "appInfo": {
+    "title": "应用说明",
+    "developer": "开发者：",
+    "awsDeployment": "AWS部署："
   }
 }

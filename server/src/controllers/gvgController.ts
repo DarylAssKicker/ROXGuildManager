@@ -3,6 +3,7 @@ import gvgService from '../services/gvgService';
 import { ImportGVGRequest, GetGVGRequest } from '../types';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getDataUserId } from '../middleware/permissionMiddleware';
 
 class GVGController {
   /**
@@ -28,7 +29,7 @@ class GVGController {
         });
       }
 
-      const result = await gvgService.importGVGData(req.user.userId, gvgData);
+      const result = await gvgService.importGVGData(getDataUserId(req), gvgData);
       
       if (result.success) {
         return res.status(200).json(result);
@@ -68,7 +69,7 @@ class GVGController {
         });
       }
 
-      const result = await gvgService.getGVGDataByDate(req.user.userId, date);
+      const result = await gvgService.getGVGDataByDate(getDataUserId(req), date);
       
       if (result.success) {
         return res.status(200).json(result);
@@ -108,7 +109,8 @@ class GVGController {
         });
       }
 
-      const result = await gvgService.getGVGDataByDateRange(req.user.userId, startDate, endDate);
+      const dataUserId = getDataUserId(req as any);
+      const result = await gvgService.getGVGDataByDateRange(dataUserId, startDate, endDate);
       
       return res.status(200).json(result);
     } catch (error) {
@@ -134,7 +136,7 @@ class GVGController {
         });
       }
 
-      const result = await gvgService.getAllGVGDates(req.user.userId);
+      const result = await gvgService.getAllGVGDates(getDataUserId(req));
       
       return res.status(200).json(result);
     } catch (error) {
@@ -170,7 +172,7 @@ class GVGController {
         });
       }
 
-      const result = await gvgService.deleteGVGData(req.user.userId, date);
+      const result = await gvgService.deleteGVGData(getDataUserId(req), date);
       
       if (result.success) {
         return res.status(200).json(result);
@@ -200,7 +202,7 @@ class GVGController {
         });
       }
 
-      const result = await gvgService.getGVGStatistics(req.user.userId);
+      const result = await gvgService.getGVGStatistics(getDataUserId(req));
       
       return res.status(200).json(result);
     } catch (error) {
@@ -327,7 +329,7 @@ class GVGController {
         });
       }
 
-      const result = await gvgService.getMemberGVGParticipation(req.user.userId, decodeURIComponent(memberName));
+      const result = await gvgService.getMemberGVGParticipation(getDataUserId(req), decodeURIComponent(memberName));
       
       if (result.success) {
         return res.status(200).json(result);
@@ -357,7 +359,7 @@ class GVGController {
         });
       }
 
-      const result = await gvgService.getAllMembersGVGParticipation(req.user.userId);
+      const result = await gvgService.getAllMembersGVGParticipation(getDataUserId(req));
       
       if (result.success) {
         return res.status(200).json(result);
@@ -397,7 +399,7 @@ class GVGController {
         });
       }
 
-      const result = await gvgService.getMembersGVGParticipation(req.user.userId, memberNames);
+      const result = await gvgService.getMembersGVGParticipation(getDataUserId(req), memberNames);
       
       if (result.success) {
         return res.status(200).json(result);

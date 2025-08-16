@@ -94,7 +94,7 @@ class AuthController {
         return;
       }
 
-      await authService.logout(req.user.userId);
+      await authService.logout(req.user.id);
       const response: ApiResponse<null> = {
         success: true,
         message: 'Logout successful'
@@ -125,7 +125,7 @@ class AuthController {
         return;
       }
 
-      const user = await authService.getUserById(req.user.userId);
+      const user = await authService.getUserById(req.user.id);
       if (!user) {
         const response: ApiResponse<null> = {
           success: false,
@@ -317,7 +317,7 @@ class AuthController {
       }
 
       // Cannot delete yourself
-      if (req.user && req.user.userId === id) {
+      if (req.user && req.user.id === id) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'Cannot delete your own account',
@@ -385,7 +385,7 @@ class AuthController {
       });
 
       // Update password
-      await authService.updateUser(req.user.userId, {
+      await authService.updateUser(req.user.id, {
         password: newPassword
       });
 

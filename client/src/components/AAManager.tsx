@@ -9,6 +9,7 @@ import { AAInfo } from '../types';
 import dayjs from 'dayjs';
 import DataManager from '../services/DataManager';
 import { useTranslation } from '../hooks/useTranslation';
+import { usePermissions } from '../hooks/usePermissions';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -17,6 +18,7 @@ interface AAManagerProps {}
 
 const AAManager: React.FC<AAManagerProps> = () => {
   const { t } = useTranslation();
+  const { canCreate, canDelete, canUpdate } = usePermissions();
   const [isImageRecognitionVisible, setIsImageRecognitionVisible] = useState(false);
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const [importType, setImportType] = useState<'file' | 'text'>('file');
@@ -473,20 +475,24 @@ const AAManager: React.FC<AAManagerProps> = () => {
       }}>
         <Title level={3} style={{ margin: 0 }}>{t('aa.title')}</Title>
         <Space>
-          <Button
-            icon={<ImportOutlined />}
-            onClick={() => setIsImportModalVisible(true)}
-            style={{ backgroundColor: '#1890ff', color: 'white', borderColor: '#1890ff' }}
-          >
-            {t('aa.importData')}
-          </Button>
-          <Button
-            icon={<CameraOutlined />}
-            onClick={() => setIsImageRecognitionVisible(true)}
-            style={{ backgroundColor: '#1890ff', color: 'white', borderColor: '#1890ff' }}
-          >
-            {t('aa.imageRecognition')}
-          </Button>
+          {canCreate('aa') && (
+            <Button
+              icon={<ImportOutlined />}
+              onClick={() => setIsImportModalVisible(true)}
+              style={{ backgroundColor: '#1890ff', color: 'white', borderColor: '#1890ff' }}
+            >
+              {t('aa.importData')}
+            </Button>
+          )}
+          {canCreate('aa') && (
+            <Button
+              icon={<CameraOutlined />}
+              onClick={() => setIsImageRecognitionVisible(true)}
+              style={{ backgroundColor: '#1890ff', color: 'white', borderColor: '#1890ff' }}
+            >
+              {t('aa.imageRecognition')}
+            </Button>
+          )}
           <Button
             icon={<FileTextOutlined />}
             onClick={handleExportData}
@@ -494,14 +500,16 @@ const AAManager: React.FC<AAManagerProps> = () => {
           >
             {t('aa.exportData')}
           </Button>
-          <Button
-            type="primary"
-            onClick={handleSaveToServer}
-            disabled={importedData.length === 0}
-            loading={loading}
-          >
-            {t('aa.saveToServer')}
-          </Button>
+          {canCreate('aa') && (
+            <Button
+              type="primary"
+              onClick={handleSaveToServer}
+              disabled={importedData.length === 0}
+              loading={loading}
+            >
+              {t('aa.saveToServer')}
+            </Button>
+          )}
           <Button
             icon={<ReloadOutlined />}
             onClick={loadServerData}
@@ -509,13 +517,15 @@ const AAManager: React.FC<AAManagerProps> = () => {
           >
             {t('aa.refreshData')}
           </Button>
-          <Button
-            danger
-            onClick={handleClearData}
+          {canDelete('aa') && (
+            <Button
+              danger
+              onClick={handleClearData}
             disabled={importedData.length === 0}
           >
             {t('aa.clearData')}
           </Button>
+          )}
         </Space>
       </div>
 
@@ -632,29 +642,33 @@ const AAManager: React.FC<AAManagerProps> = () => {
                       >
                         Images
                       </Button>
-                      <Button
-                        size="small"
-                        onClick={() => {
-                          setImportedData([record]);
-                          message.success(t('aa.loadedToEdit'));
-                        }}
-                      >
-                        {t('aa.edit')}
-                      </Button>
-                      <Popconfirm
-                        title={t('aa.confirmDelete')}
-                        onConfirm={() => handleDeleteServerData(record.date)}
-                        okText={t('common.confirm')}
-                        cancelText={t('common.cancel')}
-                      >
+                      {canUpdate('aa') && (
                         <Button
                           size="small"
-                          danger
-                          icon={<DeleteOutlined />}
+                          onClick={() => {
+                            setImportedData([record]);
+                            message.success(t('aa.loadedToEdit'));
+                          }}
                         >
-                          {t('aa.delete')}
+                          {t('aa.edit')}
                         </Button>
-                      </Popconfirm>
+                      )}
+                      {canDelete('aa') && (
+                        <Popconfirm
+                          title={t('aa.confirmDelete')}
+                          onConfirm={() => handleDeleteServerData(record.date)}
+                          okText={t('common.confirm')}
+                          cancelText={t('common.cancel')}
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                          >
+                            {t('aa.delete')}
+                          </Button>
+                        </Popconfirm>
+                      )}
                     </Space>
                   ),
                 },
@@ -869,8 +883,8 @@ const AAManager: React.FC<AAManagerProps> = () => {
                           
                           return (
                             <div 
-                              onClick={() => setEditingCell(`name-${index}`)}
-                              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                              onClick={canUpdate('aa') ? () => setEditingCell(`name-${index}`) : undefined}
+                              style={{ cursor: canUpdate('aa') ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: '6px' }}
                             >
                               {isMatched && memberClass && (
                                 <img 
@@ -995,8 +1009,8 @@ const AAManager: React.FC<AAManagerProps> = () => {
                           
                           return (
                             <div 
-                              style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
-                              onClick={() => setEditingCell(`non-participant-name-${record.id}`)}
+                              style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: canUpdate('guild_members') ? 'pointer' : 'default' }}
+                              onClick={canUpdate('guild_members') ? () => setEditingCell(`non-participant-name-${record.id}`) : undefined}
                             >
                               {memberClass && (
                                 <img 

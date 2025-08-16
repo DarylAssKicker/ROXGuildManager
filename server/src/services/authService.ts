@@ -10,7 +10,10 @@ import {
   JwtPayload, 
   CreateUserRequest,
   UpdateUserRequest,
-  RefreshTokenRequest
+  RefreshTokenRequest,
+  CreateSubAccountRequest,
+  Permission,
+  ROLE_PERMISSIONS
 } from '../types';
 
 class AuthService {
@@ -46,12 +49,15 @@ class AuthService {
         await this.createUser({
           username: defaultUsername,
           password: defaultPassword,
-          role: 'admin'
+          role: 'admin' as 'admin' | 'owner' | 'editor' | 'viewer'
         });
         
         console.log(`✅ Default admin account created: ${defaultUsername}`);
         console.log(`⚠️ Please change the default password promptly!`);
       }
+      
+      // Migrate existing users to new role system
+      await this.migrateExistingUsers();
       
       console.log('✅ Authentication service initialization completed');
     } catch (error) {
@@ -81,8 +87,10 @@ class AuthService {
     // Update last login time
     await this.updateUserLastLogin(user.id);
     
-    // Initialize user data (if needed)
-    await this.initializeUserData(user.id);
+    // Initialize user data (if needed) - only for primary accounts, not sub-accounts
+    if (!user.parentUserId) {
+      await this.initializeUserData(user.id);
+    }
     
     // Generate token
     const payload: JwtPayload = {
@@ -200,7 +208,7 @@ class AuthService {
    * Create user
    */
   async createUser(userData: CreateUserRequest): Promise<User> {
-    const { username, password, role = 'user' } = userData;
+    const { username, password, role = 'owner' } = userData;
     
     // Check if username already exists
     const existingUser = await this.getUserByUsername(username);
@@ -361,6 +369,126 @@ class AuthService {
     } catch (error) {
       console.error(`❌ User ${userId} data initialization failed:`, error);
       // Don't throw error to avoid affecting login flow
+    }
+  }
+
+  /**
+   * Create sub-account
+   */
+  async createSubAccount(parentUserId: string, subAccountData: CreateSubAccountRequest): Promise<User> {
+    const { username, password, role, permissions } = subAccountData;
+    
+    // Check if parent user exists and has owner role
+    const parentUser = await this.getUserById(parentUserId);
+    if (!parentUser) {
+      throw new Error('Parent user does not exist');
+    }
+    if (parentUser.role !== 'admin' && parentUser.role !== 'owner') {
+      throw new Error('Only admin or owner can create sub-accounts');
+    }
+    
+    // Check if username already exists
+    const existingUser = await this.getUserByUsername(username);
+    if (existingUser) {
+      throw new Error('Username already exists');
+    }
+    
+    // Encrypt password
+    const passwordHash = await bcrypt.hash(password, this.SALT_ROUNDS);
+    
+    // Determine guild data user ID
+    const guildDataUserId = this.getDataUserId(parentUser);
+    
+    const user: User = {
+      id: uuidv4(),
+      username,
+      passwordHash,
+      role,
+      parentUserId,
+      guildDataUserId,
+      permissions: permissions || undefined,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    await databaseService.setUser(user);
+    return user;
+  }
+
+  /**
+   * Get sub-accounts for a parent user
+   */
+  async getSubAccounts(parentUserId: string): Promise<User[]> {
+    const allUsers = await this.getAllUsers();
+    return allUsers.filter(user => user.parentUserId === parentUserId);
+  }
+
+  /**
+   * Get actual data storage user ID
+   */
+  getDataUserId(user: User): string {
+    return user.guildDataUserId || user.parentUserId || user.id;
+  }
+
+  /**
+   * Check if user has permission for specific resource and action
+   */
+  hasPermission(user: User, resource: string, action: 'read' | 'create' | 'update' | 'delete'): boolean {
+    // Admin and owner have all permissions
+    if (user.role === 'admin' || user.role === 'owner') {
+      return true;
+    }
+    
+    // Get role-based permissions
+    const rolePermissions = ROLE_PERMISSIONS[user.role] || [];
+    
+    // Get custom permissions
+    const customPermissions = user.permissions || [];
+    
+    // Check if permission exists
+    const allPermissions = [...rolePermissions, ...customPermissions];
+    return allPermissions.some(perm => 
+      perm.resource === resource && perm.actions.includes(action)
+    );
+  }
+
+  /**
+   * Migrate existing users to new role system
+   */
+  async migrateExistingUsers(): Promise<void> {
+    try {
+      console.log('🔄 Migrating existing users to new role system...');
+      
+      const users = await this.getAllUsers();
+      let migrationCount = 0;
+      
+      for (const user of users) {
+        let needUpdate = false;
+        const updatedUser = { ...user };
+        
+        // Migrate old 'user' role to 'owner'
+        if ((user.role as any) === 'user') {
+          updatedUser.role = 'owner';
+          needUpdate = true;
+        }
+        
+        // Set guildDataUserId for existing users
+        if (!user.guildDataUserId && !user.parentUserId) {
+          updatedUser.guildDataUserId = user.id;
+          needUpdate = true;
+        }
+        
+        if (needUpdate) {
+          updatedUser.updatedAt = new Date().toISOString();
+          await databaseService.setUser(updatedUser);
+          migrationCount++;
+          console.log(`Migrated user ${user.username} to role ${updatedUser.role}`);
+        }
+      }
+      
+      console.log(`✅ Migration completed: ${migrationCount} users updated`);
+    } catch (error) {
+      console.error('❌ User migration failed:', error);
     }
   }
 }

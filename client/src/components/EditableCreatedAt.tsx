@@ -3,6 +3,7 @@ import { DatePicker, message } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import { GuildMember } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
+import { usePermissions } from '../hooks/usePermissions';
 import dayjs from 'dayjs';
 
 // Editable created at component
@@ -14,9 +15,12 @@ interface EditableCreatedAtProps {
 
 const EditableCreatedAt: React.FC<EditableCreatedAtProps> = ({ createdAt, record, onUpdate }) => {
   const { t } = useTranslation();
+  const { canUpdate } = usePermissions();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(createdAt);
   const datePickerRef = useRef<any>(null);
+  
+  const canEdit = canUpdate('guild_members');
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -99,6 +103,24 @@ const EditableCreatedAt: React.FC<EditableCreatedAtProps> = ({ createdAt, record
   }
 
   const displayValue = createdAt ? dayjs(createdAt).format('M/D/YY') : '-';
+
+  if (!canEdit) {
+    return (
+      <div 
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 4, 
+          padding: '2px 4px'
+        }}
+        title={createdAt ? dayjs(createdAt).format('YYYY-MM-DD') : ''}
+      >
+        <span style={{ color: '#333', fontSize: '13px', fontWeight: '500' }}>
+          {displayValue}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div 

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { databaseService } from '../services/databaseService';
 import { GuildNameResource, CreateGuildNameRequest, UpdateGuildNameRequest } from '../types';
+import { getDataUserId } from '../middleware/permissionMiddleware';
 
 export class DatabaseController {
   /**
@@ -496,17 +497,17 @@ export class DatabaseController {
    */
   async getGuildNameResource(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      
-      if (!userId) {
+      if (!req.user) {
         res.status(401).json({
           success: false,
           error: 'User not authenticated'
         });
         return;
       }
+      
+      const dataUserId = getDataUserId(req);
 
-      const guildNameResource = await databaseService.getGuildNameResource(userId);
+      const guildNameResource = await databaseService.getGuildNameResource(dataUserId);
       
       res.json({
         success: true,
@@ -526,16 +527,17 @@ export class DatabaseController {
    */
   async saveGuildNameResource(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
       const { guildName, description, backgroundImage }: CreateGuildNameRequest = req.body;
       
-      if (!userId) {
+      if (!req.user) {
         res.status(401).json({
           success: false,
           error: 'User not authenticated'
         });
         return;
       }
+      
+      const dataUserId = getDataUserId(req);
 
       if (!guildName) {
         res.status(400).json({
@@ -546,7 +548,7 @@ export class DatabaseController {
       }
 
       const guildNameResource: GuildNameResource = {
-        guildId: userId,
+        guildId: dataUserId,
         guildName,
         description: description || '',
         backgroundImage: backgroundImage || '',
@@ -554,7 +556,7 @@ export class DatabaseController {
         updatedAt: new Date().toISOString()
       };
 
-      const success = await databaseService.saveGuildNameResource(userId, guildNameResource);
+      const success = await databaseService.saveGuildNameResource(dataUserId, guildNameResource);
       
       if (success) {
         res.json({
@@ -582,21 +584,21 @@ export class DatabaseController {
    */
   async updateGuildNameResource(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
       const updateData: UpdateGuildNameRequest = req.body;
       
-      if (!userId) {
+      if (!req.user) {
         res.status(401).json({
           success: false,
           error: 'User not authenticated'
         });
         return;
       }
-
-      const success = await databaseService.updateGuildNameResource(userId, updateData);
+      
+      const dataUserId = getDataUserId(req);
+      const success = await databaseService.updateGuildNameResource(dataUserId, updateData);
       
       if (success) {
-        const updatedResource = await databaseService.getGuildNameResource(userId);
+        const updatedResource = await databaseService.getGuildNameResource(dataUserId);
         res.json({
           success: true,
           message: 'Successfully updated guild name resource',
@@ -622,17 +624,17 @@ export class DatabaseController {
    */
   async deleteGuildNameResource(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      
-      if (!userId) {
+      if (!req.user) {
         res.status(401).json({
           success: false,
           error: 'User not authenticated'
         });
         return;
       }
+      
+      const dataUserId = getDataUserId(req);
 
-      const success = await databaseService.deleteGuildNameResource(userId);
+      const success = await databaseService.deleteGuildNameResource(dataUserId);
       
       if (success) {
         res.json({
@@ -659,15 +661,15 @@ export class DatabaseController {
    */
   async uploadBackgroundImage(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      
-      if (!userId) {
+      if (!req.user) {
         res.status(401).json({
           success: false,
           error: 'User not authenticated'
         });
         return;
       }
+      
+      const dataUserId = getDataUserId(req);
 
       if (!req.file) {
         res.status(400).json({

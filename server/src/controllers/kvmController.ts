@@ -3,6 +3,7 @@ import kvmService from '../services/kvmService';
 import { ImportKVMRequest, GetKVMRequest } from '../types';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getDataUserId } from '../middleware/permissionMiddleware';
 
 class KVMController {
   /**
@@ -28,7 +29,7 @@ class KVMController {
         });
       }
 
-      const result = await kvmService.importKVMData(req.user.userId, kvmData);
+      const result = await kvmService.importKVMData(getDataUserId(req), kvmData);
       
       if (result.success) {
         return res.status(200).json(result);
@@ -68,7 +69,7 @@ class KVMController {
         });
       }
 
-      const result = await kvmService.getKVMDataByDate(req.user.userId, date);
+      const result = await kvmService.getKVMDataByDate(getDataUserId(req), date);
       
       if (result.success) {
         return res.status(200).json(result);
@@ -108,7 +109,8 @@ class KVMController {
         });
       }
 
-      const result = await kvmService.getKVMDataByDateRange(req.user.userId, startDate, endDate);
+      const dataUserId = getDataUserId(req as any);
+      const result = await kvmService.getKVMDataByDateRange(dataUserId, startDate, endDate);
       
       return res.status(200).json(result);
     } catch (error) {
@@ -134,7 +136,7 @@ class KVMController {
         });
       }
 
-      const result = await kvmService.getAllKVMDates(req.user.userId);
+      const result = await kvmService.getAllKVMDates(getDataUserId(req));
       
       return res.status(200).json(result);
     } catch (error) {
@@ -170,7 +172,7 @@ class KVMController {
         });
       }
 
-      const result = await kvmService.deleteKVMData(req.user.userId, date);
+      const result = await kvmService.deleteKVMData(getDataUserId(req), date);
       
       if (result.success) {
         return res.status(200).json(result);
@@ -200,7 +202,7 @@ class KVMController {
         });
       }
 
-      const result = await kvmService.getKVMStatistics(req.user.userId);
+      const result = await kvmService.getKVMStatistics(getDataUserId(req));
       
       return res.status(200).json(result);
     } catch (error) {

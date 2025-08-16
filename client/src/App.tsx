@@ -12,6 +12,8 @@ import {
   UsergroupAddOutlined,
   LogoutOutlined,
   UserOutlined,
+  UsergroupDeleteOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import GuildMemberList from './components/GuildMemberList';
 import ScreenshotUpload from './components/ScreenshotUpload';
@@ -21,6 +23,8 @@ import KVMManager from './components/KVMManager';
 import DataAnalysis from './components/DataAnalysis';
 import Settings from './components/Settings';
 import GroupPartyManager from './components/GroupParty/GroupPartyManager';
+import SubAccountManager from './components/SubAccountManager';
+import AppInfo from './components/AppInfo';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useTranslation } from './hooks/useTranslation';
 import { useAuth } from './contexts/AuthContext';
@@ -143,10 +147,21 @@ const App: React.FC = () => {
       icon: <CameraOutlined />,
       label: t('navigation.screenshotUpload'),
     },
+    // Only show sub-accounts menu for owner/admin users
+    ...(user?.role === 'owner' || user?.role === 'admin' ? [{
+      key: 'subaccounts',
+      icon: <UsergroupDeleteOutlined />,
+      label: t('subAccount.title'),
+    }] : []),
     {
       key: 'settings',
       icon: <SettingOutlined />,
       label: t('navigation.settings'),
+    },
+    {
+      key: 'appinfo',
+      icon: <InfoCircleOutlined />,
+      label: t('appInfo.title'),
     },
   ];
 
@@ -235,10 +250,22 @@ const App: React.FC = () => {
             <GroupPartyManager />
           </div>
         );
+      case 'subaccounts':
+        return (
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <SubAccountManager />
+          </div>
+        );
       case 'settings':
         return (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Settings />
+          </div>
+        );
+      case 'appinfo':
+        return (
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <AppInfo />
           </div>
         );
       default:

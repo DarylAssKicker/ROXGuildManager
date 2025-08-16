@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import aaService from '../services/aaService';
 import { ImportAARequest, GetAARequest } from '../types';
+import { getDataUserId } from '../middleware/permissionMiddleware';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -28,7 +29,7 @@ class AAController {
         });
       }
 
-      const result = await aaService.importAAData(req.user.userId, aaData);
+      const result = await aaService.importAAData(getDataUserId(req), aaData);
       
       if (result.success) {
         return res.status(200).json(result);
@@ -68,7 +69,7 @@ class AAController {
         });
       }
 
-      const result = await aaService.getAADataByDate(req.user.userId, date);
+      const result = await aaService.getAADataByDate(getDataUserId(req), date);
       
       if (result.success) {
         return res.status(200).json(result);
@@ -108,7 +109,8 @@ class AAController {
         });
       }
 
-      const result = await aaService.getAADataByDateRange(req.user.userId, startDate, endDate);
+      const dataUserId = getDataUserId(req as any);
+      const result = await aaService.getAADataByDateRange(dataUserId, startDate, endDate);
       
       if (result.success) {
         return res.status(200).json(result);
@@ -138,7 +140,7 @@ class AAController {
         });
       }
 
-      const result = await aaService.getAllAADates(req.user.userId);
+      const result = await aaService.getAllAADates(getDataUserId(req));
       
       if (result.success) {
         return res.status(200).json(result);
@@ -178,7 +180,7 @@ class AAController {
         });
       }
 
-      const result = await aaService.deleteAAData(req.user.userId, date);
+      const result = await aaService.deleteAAData(getDataUserId(req), date);
       
       if (result.success) {
         return res.status(200).json(result);
@@ -208,7 +210,7 @@ class AAController {
         });
       }
 
-      const result = await aaService.getAAStatistics(req.user.userId);
+      const result = await aaService.getAAStatistics(getDataUserId(req));
       
       if (result.success) {
         return res.status(200).json(result);
@@ -401,7 +403,7 @@ class AAController {
         });
       }
 
-      const result = await aaService.getMemberAAParticipation(req.user.userId, decodeURIComponent(memberName));
+      const result = await aaService.getMemberAAParticipation(getDataUserId(req), decodeURIComponent(memberName));
       
       if (result.success) {
         return res.status(200).json(result);
@@ -435,7 +437,7 @@ class AAController {
       const limitParam = req.query.limit as string;
       const limit = limitParam ? parseInt(limitParam) : undefined;
 
-      const result = await aaService.getAllMembersAAParticipation(req.user.userId, limit);
+      const result = await aaService.getAllMembersAAParticipation(getDataUserId(req), limit);
       
       if (result.success) {
         return res.status(200).json(result);
@@ -479,7 +481,7 @@ class AAController {
       const limitParam = req.query.limit as string;
       const limit = limitParam ? parseInt(limitParam) : undefined;
 
-      const result = await aaService.getMembersAAParticipation(req.user.userId, memberNames, limit);
+      const result = await aaService.getMembersAAParticipation(getDataUserId(req), memberNames, limit);
       
       if (result.success) {
         return res.status(200).json(result);

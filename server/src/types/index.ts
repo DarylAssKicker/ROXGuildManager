@@ -168,7 +168,10 @@ export interface User {
   id: string;
   username: string;
   passwordHash: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'owner' | 'editor' | 'viewer';
+  parentUserId?: string;  // Sub-account points to main account
+  guildDataUserId?: string;  // Actual data storage userId
+  permissions?: Permission[] | undefined;  // Fine-grained permissions
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string;
@@ -210,14 +213,65 @@ export interface JwtPayload {
 export interface CreateUserRequest {
   username: string;
   password: string;
-  role?: 'admin' | 'user';
+  role?: 'admin' | 'owner' | 'editor' | 'viewer';
 }
 
 // Update user request
 export interface UpdateUserRequest {
   password?: string;
-  role?: 'admin' | 'user';
+  role?: 'admin' | 'owner' | 'editor' | 'viewer';
+  permissions?: Permission[] | undefined;
 }
+
+// Permission definition
+export interface Permission {
+  resource: 'guild_members' | 'aa' | 'gvg' | 'kvm' | 'groups' | 'parties';
+  actions: ('read' | 'create' | 'update' | 'delete')[];
+}
+
+// Sub-account creation request
+export interface CreateSubAccountRequest {
+  username: string;
+  password: string;
+  role: 'editor' | 'viewer';
+  permissions?: Permission[] | undefined;
+}
+
+// Role permission mapping
+export const ROLE_PERMISSIONS: { [key: string]: Permission[] } = {
+  admin: [
+    { resource: 'guild_members', actions: ['read', 'create', 'update', 'delete'] },
+    { resource: 'aa', actions: ['read', 'create', 'update', 'delete'] },
+    { resource: 'gvg', actions: ['read', 'create', 'update', 'delete'] },
+    { resource: 'kvm', actions: ['read', 'create', 'update', 'delete'] },
+    { resource: 'groups', actions: ['read', 'create', 'update', 'delete'] },
+    { resource: 'parties', actions: ['read', 'create', 'update', 'delete'] }
+  ],
+  owner: [
+    { resource: 'guild_members', actions: ['read', 'create', 'update', 'delete'] },
+    { resource: 'aa', actions: ['read', 'create', 'update', 'delete'] },
+    { resource: 'gvg', actions: ['read', 'create', 'update', 'delete'] },
+    { resource: 'kvm', actions: ['read', 'create', 'update', 'delete'] },
+    { resource: 'groups', actions: ['read', 'create', 'update', 'delete'] },
+    { resource: 'parties', actions: ['read', 'create', 'update', 'delete'] }
+  ],
+  editor: [
+    { resource: 'guild_members', actions: ['read', 'create', 'update'] },
+    { resource: 'aa', actions: ['read', 'create'] },
+    { resource: 'gvg', actions: ['read', 'create'] },
+    { resource: 'kvm', actions: ['read', 'create'] },
+    { resource: 'groups', actions: ['read', 'create', 'update'] },
+    { resource: 'parties', actions: ['read', 'create', 'update'] }
+  ],
+  viewer: [
+    { resource: 'guild_members', actions: ['read'] },
+    { resource: 'aa', actions: ['read'] },
+    { resource: 'gvg', actions: ['read'] },
+    { resource: 'kvm', actions: ['read'] },
+    { resource: 'groups', actions: ['read'] },
+    { resource: 'parties', actions: ['read'] }
+  ]
+};
 
 // Screenshot recognition result type
 export interface ScreenshotResult {

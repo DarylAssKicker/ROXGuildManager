@@ -10,6 +10,7 @@ import {
   RemoveMemberFromPartyRequest,
   SwapMembersRequest
 } from '../types';
+import { getDataUserId } from '../middleware/permissionMiddleware';
 
 class GroupPartyController {
   // ==================== Group Controller ====================
@@ -19,8 +20,7 @@ class GroupPartyController {
    */
   async getAllGroups(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -28,8 +28,9 @@ class GroupPartyController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
-      const groups = await groupPartyService.getAllGroups(userId);
+      const groups = await groupPartyService.getAllGroups(dataUserId);
       const response: ApiResponse<typeof groups> = {
         success: true,
         data: groups,
@@ -167,8 +168,7 @@ class GroupPartyController {
    */
   async deleteGroup(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -176,6 +176,7 @@ class GroupPartyController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const { id } = req.params;
       if (!id) {
@@ -186,7 +187,7 @@ class GroupPartyController {
         res.status(400).json(response);
         return;
       }
-      const success = await groupPartyService.deleteGroup(id, userId);
+      const success = await groupPartyService.deleteGroup(id, dataUserId);
       
       if (!success) {
         const response: ApiResponse<null> = {
@@ -220,12 +221,7 @@ class GroupPartyController {
   async getAllParties(req: Request, res: Response): Promise<void> {
     try {
       console.log('🔄 getAllParties API called');
-      const userId = req.user?.userId;
-      const partyType = req.query.partyType as string;
-      console.log(`👤 User ID: ${userId}, party type filter: ${partyType}`);
-      
-      if (!userId) {
-        console.error('❌ User authentication information missing');
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -233,9 +229,12 @@ class GroupPartyController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
+      const partyType = req.query.partyType as string;
+      console.log(`👤 User ID: ${dataUserId}, party type filter: ${partyType}`);
 
-      console.log(`🔄 Starting to get party data for user ${userId}...`);
-      const parties = await groupPartyService.getAllParties(userId, partyType);
+      console.log(`🔄 Starting to get party data for user ${dataUserId}...`);
+      const parties = await groupPartyService.getAllParties(dataUserId, partyType);
       console.log(`✅ Successfully retrieved ${parties.length} parties`);
       
       const response: ApiResponse<typeof parties> = {
@@ -266,8 +265,7 @@ class GroupPartyController {
    */
   async getPartiesByGroupId(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -275,6 +273,7 @@ class GroupPartyController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const { groupId } = req.params;
       if (!groupId) {
@@ -285,7 +284,7 @@ class GroupPartyController {
         res.status(400).json(response);
         return;
       }
-      const parties = await groupPartyService.getPartiesByGroupId(groupId, userId);
+      const parties = await groupPartyService.getPartiesByGroupId(groupId, dataUserId);
       const response: ApiResponse<typeof parties> = {
         success: true,
         data: parties,
@@ -306,8 +305,7 @@ class GroupPartyController {
    */
   async getPartyById(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -315,6 +313,7 @@ class GroupPartyController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const { id } = req.params;
       if (!id) {
@@ -325,7 +324,7 @@ class GroupPartyController {
         res.status(400).json(response);
         return;
       }
-      const party = await groupPartyService.getPartyWithMembers(id, userId);
+      const party = await groupPartyService.getPartyWithMembers(id, dataUserId);
       
       if (!party) {
         const response: ApiResponse<null> = {
@@ -356,8 +355,7 @@ class GroupPartyController {
    */
   async createParty(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -365,6 +363,7 @@ class GroupPartyController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const partyData: CreatePartyRequest = req.body;
       
@@ -380,7 +379,7 @@ class GroupPartyController {
 
       // groupId is now optional, parties can belong to no group
 
-      const newParty = await groupPartyService.createParty(partyData, userId);
+      const newParty = await groupPartyService.createParty(partyData, dataUserId);
       const response: ApiResponse<typeof newParty> = {
         success: true,
         data: newParty,
@@ -402,8 +401,7 @@ class GroupPartyController {
    */
   async updateParty(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -411,6 +409,7 @@ class GroupPartyController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const { id } = req.params;
       if (!id) {
@@ -423,7 +422,7 @@ class GroupPartyController {
       }
       const updateData: Omit<UpdatePartyRequest, 'id'> = req.body;
       
-      const updatedParty = await groupPartyService.updateParty({ id, ...updateData }, userId);
+      const updatedParty = await groupPartyService.updateParty({ id, ...updateData }, dataUserId);
       
       if (!updatedParty) {
         const response: ApiResponse<null> = {
@@ -455,8 +454,7 @@ class GroupPartyController {
    */
   async deleteParty(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -464,6 +462,7 @@ class GroupPartyController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const { id } = req.params;
       if (!id) {
@@ -474,7 +473,7 @@ class GroupPartyController {
         res.status(400).json(response);
         return;
       }
-      const success = await groupPartyService.deleteParty(id, userId);
+      const success = await groupPartyService.deleteParty(id, dataUserId);
       
       if (!success) {
         const response: ApiResponse<null> = {
@@ -507,8 +506,7 @@ class GroupPartyController {
    */
   async assignMemberToParty(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -516,6 +514,7 @@ class GroupPartyController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const assignData: AssignMemberToPartyRequest = req.body;
       
@@ -529,7 +528,7 @@ class GroupPartyController {
         return;
       }
 
-      await groupPartyService.assignMemberToParty(assignData, userId);
+      await groupPartyService.assignMemberToParty(assignData, dataUserId);
       const response: ApiResponse<null> = {
         success: true,
         message: 'Member assigned successfully',
@@ -550,8 +549,7 @@ class GroupPartyController {
    */
   async removeMemberFromParty(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -559,6 +557,7 @@ class GroupPartyController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const removeData: RemoveMemberFromPartyRequest = req.body;
       
@@ -572,7 +571,7 @@ class GroupPartyController {
         return;
       }
 
-      await groupPartyService.removeMemberFromParty(removeData, userId);
+      await groupPartyService.removeMemberFromParty(removeData, dataUserId);
       const response: ApiResponse<null> = {
         success: true,
         message: 'Member removed successfully',
@@ -593,8 +592,7 @@ class GroupPartyController {
    */
   async getUnassignedMembers(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -602,9 +600,10 @@ class GroupPartyController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const { partyType } = req.query;
-      const members = await groupPartyService.getUnassignedMembers(partyType as string, userId);
+      const members = await groupPartyService.getUnassignedMembers(partyType as string, dataUserId);
       const response: ApiResponse<typeof members> = {
         success: true,
         data: members,
@@ -625,8 +624,7 @@ class GroupPartyController {
    */
   async swapMembers(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -634,6 +632,7 @@ class GroupPartyController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const swapData: SwapMembersRequest = req.body;
       console.log(`📝 Controller received swap request:`, JSON.stringify(swapData, null, 2));
@@ -650,7 +649,7 @@ class GroupPartyController {
         return;
       }
 
-      await groupPartyService.swapMembers(swapData, userId);
+      await groupPartyService.swapMembers(swapData, dataUserId);
       const response: ApiResponse<null> = {
         success: true,
         message: 'Member positions swapped successfully',
@@ -671,8 +670,7 @@ class GroupPartyController {
    */
   async clearAllParties(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -680,8 +678,9 @@ class GroupPartyController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
-      const success = await groupPartyService.clearAllParties(userId);
+      const success = await groupPartyService.clearAllParties(dataUserId);
       
       if (success) {
         const response: ApiResponse<null> = {

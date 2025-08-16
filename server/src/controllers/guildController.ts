@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import guildService from '../services/guildService';
 import { ApiResponse, CreateMemberRequest } from '../types';
+import { getDataUserId } from '../middleware/permissionMiddleware';
 
 export class GuildController {
   // Get all guild members
   async getMembers(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -16,7 +16,8 @@ export class GuildController {
         return;
       }
 
-      const members = await guildService.getAllMembers(userId);
+      const dataUserId = getDataUserId(req);
+      const members = await guildService.getAllMembers(dataUserId);
       const response: ApiResponse<typeof members> = {
         success: true,
         data: members,
@@ -34,8 +35,7 @@ export class GuildController {
   // Get single guild member
   async getMember(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -66,7 +66,8 @@ export class GuildController {
         return;
       }
       
-      const member = await guildService.getMemberById(numericId, userId);
+      const dataUserId = getDataUserId(req);
+      const member = await guildService.getMemberById(numericId, dataUserId);
       
       if (!member) {
         const response: ApiResponse<null> = {
@@ -94,8 +95,7 @@ export class GuildController {
   // Create guild member
   async createMember(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -116,7 +116,8 @@ export class GuildController {
         return;
       }
 
-      const newMember = await guildService.createMember(memberData, userId);
+      const dataUserId = getDataUserId(req);
+      const newMember = await guildService.createMember(memberData, dataUserId);
       const response: ApiResponse<typeof newMember> = {
         success: true,
         data: newMember,
@@ -135,8 +136,7 @@ export class GuildController {
   // Update guild member
   async updateMember(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -144,6 +144,7 @@ export class GuildController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const { id } = req.params;
       const updateData = req.body;
@@ -168,7 +169,7 @@ export class GuildController {
         return;
       }
       
-      const updatedMember = await guildService.updateMember(numericId, updateData, userId);
+      const updatedMember = await guildService.updateMember(numericId, updateData, dataUserId);
       const response: ApiResponse<typeof updatedMember> = {
         success: true,
         data: updatedMember,
@@ -187,8 +188,7 @@ export class GuildController {
   // Delete guild member
   async deleteMember(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -196,6 +196,7 @@ export class GuildController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const { id } = req.params;
       
@@ -219,7 +220,7 @@ export class GuildController {
         return;
       }
       
-      await guildService.deleteMember(numericId, userId);
+      await guildService.deleteMember(numericId, dataUserId);
       
       const response: ApiResponse<null> = {
         success: true,
@@ -238,8 +239,7 @@ export class GuildController {
   // Delete all guild members
   async deleteAllMembers(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -247,8 +247,9 @@ export class GuildController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
-      await guildService.deleteAllMembers(userId);
+      await guildService.deleteAllMembers(dataUserId);
       
       const response: ApiResponse<null> = {
         success: true,
@@ -267,8 +268,7 @@ export class GuildController {
   // Batch update guild members
   async batchUpdateMembers(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -276,6 +276,7 @@ export class GuildController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const { members } = req.body;
       
@@ -288,7 +289,7 @@ export class GuildController {
         return;
       }
 
-      await guildService.batchUpdateMembers(members, userId);
+      await guildService.batchUpdateMembers(members, dataUserId);
       const response: ApiResponse<null> = {
         success: true,
         message: 'Guild members batch updated successfully',
@@ -345,8 +346,7 @@ export class GuildController {
   // Search guild members
   async searchMembers(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -354,6 +354,7 @@ export class GuildController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const { q } = req.query;
       
@@ -366,7 +367,7 @@ export class GuildController {
         return;
       }
 
-      const members = await guildService.searchMembers(q, userId);
+      const members = await guildService.searchMembers(q, dataUserId);
       const response: ApiResponse<typeof members> = {
         success: true,
         data: members,
@@ -384,8 +385,7 @@ export class GuildController {
   // Filter members by class
   async getMembersByClass(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.userId;
-      if (!userId) {
+      if (!req.user) {
         const response: ApiResponse<null> = {
           success: false,
           error: 'User authentication information missing',
@@ -393,6 +393,7 @@ export class GuildController {
         res.status(401).json(response);
         return;
       }
+      const dataUserId = getDataUserId(req);
 
       const { className } = req.params;
       
@@ -405,7 +406,7 @@ export class GuildController {
         return;
       }
 
-      const members = await guildService.getMembersByClass(className, userId);
+      const members = await guildService.getMembersByClass(className, dataUserId);
       const response: ApiResponse<typeof members> = {
         success: true,
         data: members,

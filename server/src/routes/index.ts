@@ -10,7 +10,9 @@ import templateRoutes from './template';
 import classRoutes from './classRoutes';
 import groupPartyRoutes from './groupParty';
 import authRoutes from './auth';
+import subAccountRoutes from './subAccount';
 import { authenticateToken } from '../middleware/auth';
+import { requirePermission } from '../middleware/permissionMiddleware';
 
 const router = Router();
 
@@ -22,16 +24,16 @@ const upload = multer({
   },
 });
 
-// Guild member related routes (authentication required)
-router.get('/guild/members', authenticateToken, guildController.getMembers);
-router.get('/guild/members/search', authenticateToken, guildController.searchMembers);
-router.get('/guild/members/class/:className', authenticateToken, guildController.getMembersByClass);
-router.get('/guild/members/:id', authenticateToken, guildController.getMember);
-router.post('/guild/members', authenticateToken, guildController.createMember);
-router.put('/guild/members/:id', authenticateToken, guildController.updateMember);
-router.delete('/guild/members/:id', authenticateToken, guildController.deleteMember);
-router.delete('/guild/members', authenticateToken, guildController.deleteAllMembers);
-router.post('/guild/members/batch', authenticateToken, guildController.batchUpdateMembers);
+// Guild member related routes (authentication and permission required)
+router.get('/guild/members', authenticateToken, requirePermission('guild_members', 'read'), guildController.getMembers);
+router.get('/guild/members/search', authenticateToken, requirePermission('guild_members', 'read'), guildController.searchMembers);
+router.get('/guild/members/class/:className', authenticateToken, requirePermission('guild_members', 'read'), guildController.getMembersByClass);
+router.get('/guild/members/:id', authenticateToken, requirePermission('guild_members', 'read'), guildController.getMember);
+router.post('/guild/members', authenticateToken, requirePermission('guild_members', 'create'), guildController.createMember);
+router.put('/guild/members/:id', authenticateToken, requirePermission('guild_members', 'update'), guildController.updateMember);
+router.delete('/guild/members/:id', authenticateToken, requirePermission('guild_members', 'delete'), guildController.deleteMember);
+router.delete('/guild/members', authenticateToken, requirePermission('guild_members', 'delete'), guildController.deleteAllMembers);
+router.post('/guild/members/batch', authenticateToken, requirePermission('guild_members', 'update'), guildController.batchUpdateMembers);
 
 // Guild info related routes (authentication required)
 router.get('/guild/info', authenticateToken, guildController.getGuildInfo);
@@ -74,6 +76,9 @@ router.use('/group-party', authenticateToken, groupPartyRoutes);
 
 // Authentication related routes
 router.use('/auth', authRoutes);
+
+// Sub-account management routes (authentication required)
+router.use('/sub-accounts', authenticateToken, subAccountRoutes);
 
 // Health check route
 router.get('/health', (req, res) => {

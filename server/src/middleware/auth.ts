@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { authService } from '../services/authService';
-import { JwtPayload } from '../types';
+import { User } from '../types';
 
 // Extend Request interface to include user information
 declare global {
   namespace Express {
     interface Request {
-      user?: JwtPayload;
+      user?: User;
     }
   }
 }
@@ -32,7 +32,15 @@ export const authenticateToken = async (
     }
 
     const payload = await authService.verifyToken(token);
-    req.user = payload;
+    const user = await authService.getUserById(payload.userId);
+    if (!user) {
+      res.status(401).json({
+        success: false,
+        error: 'User not found'
+      });
+      return;
+    }
+    req.user = user;
     next();
   } catch (error) {
     console.error('Token verification failed:', error);
@@ -88,7 +96,10 @@ export const optionalAuth = async (
     if (token) {
       try {
         const payload = await authService.verifyToken(token);
-        req.user = payload;
+        const user = await authService.getUserById(payload.userId);
+        if (user) {
+          req.user = user;
+        }
       } catch (error) {
         // Don't throw error when token is invalid, just don't set user info
         console.log('Optional auth token verification failed:', error);

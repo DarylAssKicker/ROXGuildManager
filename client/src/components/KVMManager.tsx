@@ -9,6 +9,7 @@ import { KVMInfo } from '../types';
 import dayjs from 'dayjs';
 import DataManager from '../services/DataManager';
 import { useTranslation } from '../hooks/useTranslation';
+import { usePermissions } from '../hooks/usePermissions';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -17,6 +18,7 @@ interface KVMManagerProps {}
 
 const KVMManager: React.FC<KVMManagerProps> = () => {
   const { t } = useTranslation();
+  const { canCreate, canDelete, canUpdate } = usePermissions();
   const [isImageRecognitionVisible, setIsImageRecognitionVisible] = useState(false);
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const [importType, setImportType] = useState<'file' | 'text'>('file');
@@ -405,20 +407,24 @@ const KVMManager: React.FC<KVMManagerProps> = () => {
       }}>
         <Title level={3} style={{ margin: 0 }}>{t('kvm.title')}</Title>
         <Space>
-          <Button
-            icon={<ImportOutlined />}
-            onClick={() => setIsImportModalVisible(true)}
-            style={{ backgroundColor: '#1890ff', color: 'white', borderColor: '#1890ff' }}
-          >
-            {t('kvm.importData')}
-          </Button>
-          <Button
-            icon={<CameraOutlined />}
-            onClick={() => setIsImageRecognitionVisible(true)}
-            style={{ backgroundColor: '#1890ff', color: 'white', borderColor: '#1890ff' }}
-          >
-            {t('kvm.imageRecognition')}
-          </Button>
+          {canCreate('kvm') && (
+            <Button
+              icon={<ImportOutlined />}
+              onClick={() => setIsImportModalVisible(true)}
+              style={{ backgroundColor: '#1890ff', color: 'white', borderColor: '#1890ff' }}
+            >
+              {t('kvm.importData')}
+            </Button>
+          )}
+          {canCreate('kvm') && (
+            <Button
+              icon={<CameraOutlined />}
+              onClick={() => setIsImageRecognitionVisible(true)}
+              style={{ backgroundColor: '#1890ff', color: 'white', borderColor: '#1890ff' }}
+            >
+              {t('kvm.imageRecognition')}
+            </Button>
+          )}
           <Button
             icon={<FileTextOutlined />}
             onClick={handleExportData}
@@ -426,14 +432,16 @@ const KVMManager: React.FC<KVMManagerProps> = () => {
           >
             {t('kvm.exportData')}
           </Button>
-          <Button
-            type="primary"
-            onClick={handleSaveToServer}
-            disabled={importedData.length === 0}
-            loading={loading}
-          >
-            {t('kvm.saveToServer')}
-          </Button>
+          {canCreate('kvm') && (
+            <Button
+              type="primary"
+              onClick={handleSaveToServer}
+              disabled={importedData.length === 0}
+              loading={loading}
+            >
+              {t('kvm.saveToServer')}
+            </Button>
+          )}
           <Button
             icon={<ReloadOutlined />}
             onClick={loadServerData}
@@ -441,13 +449,15 @@ const KVMManager: React.FC<KVMManagerProps> = () => {
           >
             {t('kvm.refreshData')}
           </Button>
-          <Button
-            danger
-            onClick={handleClearData}
-            disabled={importedData.length === 0}
-          >
-            {t('kvm.clearData')}
-          </Button>
+          {canDelete('kvm') && (
+            <Button
+              danger
+              onClick={handleClearData}
+              disabled={importedData.length === 0}
+            >
+              {t('kvm.clearData')}
+            </Button>
+          )}
         </Space>
       </div>
 

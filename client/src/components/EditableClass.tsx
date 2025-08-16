@@ -3,6 +3,7 @@ import { Select, message, Tag } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import { GuildMember } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
+import { usePermissions } from '../hooks/usePermissions';
 import { globalClassesManager } from '../services/GlobalClassesManager';
 import { getClassColor } from '../utils/classColors';
 
@@ -20,11 +21,14 @@ interface ClassInfo {
 
 const EditableClass: React.FC<EditableClassProps> = ({ className, record, onUpdate }) => {
   const { t } = useTranslation();
+  const { canUpdate } = usePermissions();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(className);
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
   const selectRef = useRef<any>(null);
+  
+  const canEdit = canUpdate('guild_members');
 
   // Load class data when component mounts
   useEffect(() => {
@@ -123,6 +127,45 @@ const EditableClass: React.FC<EditableClassProps> = ({ className, record, onUpda
           </Select.Option>
         ))}
       </Select>
+    );
+  }
+
+  if (!canEdit) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        {className ? (
+          <Tag
+            style={{
+              backgroundColor: getClassColor(className, classes),
+              color: '#000',
+              border: 'none',
+              fontWeight: 'bold',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '2px 8px',
+              margin: 0
+            }}
+          >
+            <img 
+              src={`/images/classes/${className}.webp`}
+              alt={className}
+              style={{
+                width: '16px',
+                height: '16px',
+                objectFit: 'contain'
+              }}
+              onError={(e) => {
+                // Hide image element if icon fails to load
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+            {className}
+          </Tag>
+        ) : (
+          <span style={{ color: '#999' }}>-</span>
+        )}
+      </div>
     );
   }
 

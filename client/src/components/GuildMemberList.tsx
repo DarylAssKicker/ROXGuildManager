@@ -7,6 +7,7 @@ import { useGuildMembers } from '../hooks/useGuildMembers';
 import { useOptimizedDataManager } from '../hooks/useOptimizedDataManager';
 import { useTranslation } from '../hooks/useTranslation';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { usePermissions } from '../hooks/usePermissions';
 import GuildMemberForm from './GuildMemberForm';
 import EnhancedImageRecognition from './EnhancedImageRecognition';
 import ClassDistributionChart from './ClassDistributionChart';
@@ -22,9 +23,12 @@ interface EditableNameProps {
 
 const EditableName: React.FC<EditableNameProps> = ({ name, record, onUpdate }) => {
   const { t } = useTranslation();
+  const { canUpdate } = usePermissions();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(name);
   const inputRef = useRef<any>(null);
+  
+  const canEdit = canUpdate('guild_members');
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -82,6 +86,14 @@ const EditableName: React.FC<EditableNameProps> = ({ name, record, onUpdate }) =
     );
   }
 
+  if (!canEdit) {
+    return (
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {name}
+      </span>
+    );
+  }
+
   return (
     <div 
       style={{ 
@@ -119,9 +131,12 @@ interface EditableSortProps {
 
 const EditableSort: React.FC<EditableSortProps> = ({ sort, record, onUpdate }) => {
   const { t } = useTranslation();
+  const { canUpdate } = usePermissions();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(sort || 0);
   const inputRef = useRef<any>(null);
+  
+  const canEdit = canUpdate('guild_members');
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -179,6 +194,14 @@ const EditableSort: React.FC<EditableSortProps> = ({ sort, record, onUpdate }) =
     );
   }
 
+  if (!canEdit) {
+    return (
+      <span style={{ color: '#666' }}>
+        {sort || 0}
+      </span>
+    );
+  }
+
   return (
     <div 
       style={{ 
@@ -213,6 +236,7 @@ const GuildMemberList: React.FC = () => {
   const { t } = useTranslation();
   const { t: i18nT } = useI18nTranslation();
   const { members, loading: membersLoading, error, deleteMember, deleteAllMembers, fetchMembers, addMember, updateMember } = useGuildMembers();
+  const { canCreate, canUpdate, canDelete } = usePermissions();
   
   // Use optimized data management Hook
   const {
@@ -638,22 +662,26 @@ const GuildMemberList: React.FC = () => {
         flexShrink: 0 
       }}>
         <div>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setIsAddModalVisible(true)}
-            style={{ marginRight: 8 }}
-          >
-            {t('guildMember.addMember')}
-          </Button>
-          <Button
-            type="primary"
-            icon={<CameraOutlined />}
-            onClick={() => setIsImageRecognitionVisible(true)}
-            style={{ marginRight: 8 }}
-          >
-            {t('guildMember.imageRecognition')}
-          </Button>
+          {canCreate('guild_members') && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setIsAddModalVisible(true)}
+              style={{ marginRight: 8 }}
+            >
+              {t('guildMember.addMember')}
+            </Button>
+          )}
+          {canCreate('guild_members') && (
+            <Button
+              type="primary"
+              icon={<CameraOutlined />}
+              onClick={() => setIsImageRecognitionVisible(true)}
+              style={{ marginRight: 8 }}
+            >
+              {t('guildMember.imageRecognition')}
+            </Button>
+          )}
           <Button
             icon={<PieChartOutlined />}
             onClick={() => setIsClassDistributionVisible(true)}

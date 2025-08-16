@@ -9,6 +9,7 @@ import { GVGInfo } from '../types';
 import dayjs from 'dayjs';
 import DataManager from '../services/DataManager';
 import { useTranslation } from '../hooks/useTranslation';
+import { usePermissions } from '../hooks/usePermissions';
 import { getClassColor } from '../utils/classColors';
 import { classesApi } from '../services/api';
 
@@ -19,6 +20,7 @@ interface GVGManagerProps {}
 
 const GVGManager: React.FC<GVGManagerProps> = () => {
   const { t } = useTranslation();
+  const { canCreate, canDelete, canUpdate } = usePermissions();
   const [isImageRecognitionVisible, setIsImageRecognitionVisible] = useState(false);
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const [importType, setImportType] = useState<'file' | 'text'>('file');
@@ -419,20 +421,24 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
       }}>
         <Title level={3} style={{ margin: 0 }}>{t('gvg.title')}</Title>
         <Space>
-          <Button
-            icon={<ImportOutlined />}
-            onClick={() => setIsImportModalVisible(true)}
-            style={{ backgroundColor: '#1890ff', color: 'white', borderColor: '#1890ff' }}
-          >
-            {t('gvg.importData')}
-          </Button>
-          <Button
-            icon={<CameraOutlined />}
-            onClick={() => setIsImageRecognitionVisible(true)}
-            style={{ backgroundColor: '#1890ff', color: 'white', borderColor: '#1890ff' }}
-          >
-            {t('gvg.imageRecognition')}
-          </Button>
+          {canCreate('gvg') && (
+            <Button
+              icon={<ImportOutlined />}
+              onClick={() => setIsImportModalVisible(true)}
+              style={{ backgroundColor: '#1890ff', color: 'white', borderColor: '#1890ff' }}
+            >
+              {t('gvg.importData')}
+            </Button>
+          )}
+          {canCreate('gvg') && (
+            <Button
+              icon={<CameraOutlined />}
+              onClick={() => setIsImageRecognitionVisible(true)}
+              style={{ backgroundColor: '#1890ff', color: 'white', borderColor: '#1890ff' }}
+            >
+              {t('gvg.imageRecognition')}
+            </Button>
+          )}
           <Button
             icon={<FileTextOutlined />}
             onClick={handleExportData}
@@ -440,14 +446,16 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
           >
             {t('gvg.exportData')}
           </Button>
-          <Button
-            type="primary"
-            onClick={handleSaveToServer}
-            disabled={importedData.length === 0}
-            loading={loading}
-          >
-            {t('gvg.saveToServer')}
-          </Button>
+          {canCreate('gvg') && (
+            <Button
+              type="primary"
+              onClick={handleSaveToServer}
+              disabled={importedData.length === 0}
+              loading={loading}
+            >
+              {t('gvg.saveToServer')}
+            </Button>
+          )}
           <Button
             icon={<ReloadOutlined />}
             onClick={loadServerData}
@@ -455,13 +463,15 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
           >
             {t('gvg.refreshData')}
           </Button>
-          <Button
-            danger
-            onClick={handleClearData}
-            disabled={importedData.length === 0}
-          >
-            {t('gvg.clearData')}
-          </Button>
+          {canDelete('gvg') && (
+            <Button
+              danger
+              onClick={handleClearData}
+              disabled={importedData.length === 0}
+            >
+              {t('gvg.clearData')}
+            </Button>
+          )}
         </Space>
       </div>
 

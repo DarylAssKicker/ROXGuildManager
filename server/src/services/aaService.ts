@@ -1,5 +1,6 @@
 import Redis from 'ioredis';
 import { AAInfo, AAMemberData, ApiResponse } from '../types';
+import { authService } from './authService';
 
 class AAService {
   private redis: Redis;
@@ -27,13 +28,27 @@ class AAService {
   }
 
   /**
+   * Get actual data storage user ID
+   */
+  private async getDataUserId(requestUserId: string): Promise<string> {
+    const user = await authService.getUserById(requestUserId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    return authService.getDataUserId(user);
+  }
+
+  /**
    * Import AA data to Redis
    */
-  async importAAData(userId: string, aaData: AAInfo[]): Promise<ApiResponse<{ imported: number; total: number }>> {
+  async importAAData(requestUserId: string, aaData: AAInfo[]): Promise<ApiResponse<{ imported: number; total: number }>> {
     try {
       console.log('Starting AA data import:', aaData);
       let importedCount = 0;
       const totalCount = aaData.length;
+
+      // Get actual data storage user ID
+      const dataUserId = await this.getDataUserId(requestUserId);
 
       // Test Redis connection
       try {
@@ -57,14 +72,14 @@ class AAService {
           continue;
         }
 
-        // Use user ID and date as key to store AA data
-        const key = `rox_guild:user:${userId}:aa:${aaInfo.date}`;
+        // Use data user ID and date as key to store AA data
+        const key = `rox_guild:user:${dataUserId}:aa:${aaInfo.date}`;
         
         // Store AA data to Redis
         await this.redis.setex(key, 86400 * 365, JSON.stringify(aaInfo)); // Save for 1 year
         
         // Add to user's date index
-        await this.redis.zadd(`rox_guild:user:${userId}:aa:dates`, new Date(aaInfo.date).getTime(), aaInfo.date);
+        await this.redis.zadd(`rox_guild:user:${dataUserId}:aa:dates`, new Date(aaInfo.date).getTime(), aaInfo.date);
         
         importedCount++;
         console.log(`Successfully imported AA data: ${aaInfo.date}`);
@@ -92,9 +107,11 @@ class AAService {
   /**
    * Get AA data for specified date
    */
-  async getAADataByDate(userId: string, date: string): Promise<ApiResponse<AAInfo>> {
+  async getAADataByDate(requestUserId: string, date: string): Promise<ApiResponse<AAInfo>> {
     try {
-      const key = `rox_guild:user:${userId}:aa:${date}`;
+      // Get actual data storage user ID
+      const dataUserId = await this.getDataUserId(requestUserId);
+      const key = `rox_guild:user:${dataUserId}:aa:${date}`;
       const data = await this.redis.get(key);
       
       if (!data) {
@@ -123,13 +140,16 @@ class AAService {
   /**
    * Get AA data within date range
    */
-  async getAADataByDateRange(userId: string, startDate: string, endDate: string): Promise<ApiResponse<AAInfo[]>> {
+  async getAADataByDateRange(requestUserId: string, startDate: string, endDate: string): Promise<ApiResponse<AAInfo[]>> {
     try {
       const startTimestamp = new Date(startDate).getTime();
       const endTimestamp = new Date(endDate).getTime();
       
+      // Get actual data storage user ID
+      const dataUserId = await this.getDataUserId(requestUserId);
+      
       // Get all dates within user's date range
-      const dates = await this.redis.zrangebyscore(`rox_guild:user:${userId}:aa:dates`, startTimestamp, endTimestamp);
+      const dates = await this.redis.zrangebyscore(`rox_guild:user:${dataUserId}:aa:dates`, startTimestamp, endTimestamp);
       
       if (dates.length === 0) {
         return {
@@ -142,7 +162,7 @@ class AAService {
       const aaDataList: AAInfo[] = [];
       
       for (const date of dates) {
-        const key = `rox_guild:user:${userId}:aa:${date}`;
+        const key = `rox_guild:user:${dataUserId}:aa:${date}`;
         const data = await this.redis.get(key);
         if (data) {
           aaDataList.push(JSON.parse(data));
@@ -166,9 +186,11 @@ class AAService {
   /**
    * Get date list of all AA data
    */
-  async getAllAADates(userId: string): Promise<ApiResponse<string[]>> {
+  async getAllAADates(requestUserId: string): Promise<ApiResponse<string[]>> {
     try {
-      const dates = await this.redis.zrange(`rox_guild:user:${userId}:aa:dates`, 0, -1);
+      // Get actual data storage user ID
+      const dataUserId = await this.getDataUserId(requestUserId);
+      const dates = await this.redis.zrange(`rox_guild:user:${dataUserId}:aa:dates`, 0, -1);
       return {
         success: true,
         data: dates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
@@ -186,14 +208,16 @@ class AAService {
   /**
    * Delete AA data for specified date
    */
-  async deleteAAData(userId: string, date: string): Promise<ApiResponse<boolean>> {
+  async deleteAAData(requestUserId: string, date: string): Promise<ApiResponse<boolean>> {
     try {
-      const key = `rox_guild:user:${userId}:aa:${date}`;
+      // Get actual data storage user ID
+      const dataUserId = await this.getDataUserId(requestUserId);
+      const key = `rox_guild:user:${dataUserId}:aa:${date}`;
       const deleted = await this.redis.del(key);
       
       if (deleted > 0) {
         // Remove from user's date index
-        await this.redis.zrem(`rox_guild:user:${userId}:aa:dates`, date);
+        await this.redis.zrem(`rox_guild:user:${dataUserId}:aa:dates`, date);
         return {
           success: true,
           data: true,
@@ -219,13 +243,15 @@ class AAService {
   /**
    * Get AA data statistics
    */
-  async getAAStatistics(userId: string): Promise<ApiResponse<{
+  async getAAStatistics(requestUserId: string): Promise<ApiResponse<{
     totalRecords: number;
     dateRange: { start: string; end: string } | null;
     totalParticipants: number;
   }>> {
     try {
-      const dates = await this.redis.zrange(`rox_guild:user:${userId}:aa:dates`, 0, -1);
+      // Get actual data storage user ID
+      const dataUserId = await this.getDataUserId(requestUserId);
+      const dates = await this.redis.zrange(`rox_guild:user:${dataUserId}:aa:dates`, 0, -1);
       
       if (dates.length === 0) {
         return {
@@ -243,7 +269,7 @@ class AAService {
       
       // Calculate total participants
       for (const date of dates) {
-        const key = `rox_guild:user:${userId}:aa:${date}`;
+        const key = `rox_guild:user:${dataUserId}:aa:${date}`;
         const data = await this.redis.get(key);
         if (data) {
           const aaInfo: AAInfo = JSON.parse(data);
@@ -293,10 +319,10 @@ class AAService {
   /**
    * Get member AA participation status (recent 5 times)
    */
-  async getMemberAAParticipation(userId: string, memberName: string): Promise<ApiResponse<{ [date: string]: boolean }>> {
+  async getMemberAAParticipation(requestUserId: string, memberName: string): Promise<ApiResponse<{ [date: string]: boolean }>> {
     try {
       // Get all AA dates
-      const datesResult = await this.getAllAADates(userId);
+      const datesResult = await this.getAllAADates(requestUserId);
       if (!datesResult.success || !datesResult.data) {
         return {
           success: true,
@@ -311,7 +337,7 @@ class AAService {
 
       // Check participation status for each date
       for (const date of recentDates) {
-        const aaDataResult = await this.getAADataByDate(userId, date);
+        const aaDataResult = await this.getAADataByDate(requestUserId, date);
         if (aaDataResult.success && aaDataResult.data) {
           const participants = aaDataResult.data.participants || [];
           participation[date] = participants.some(p => p.name === memberName);
@@ -338,17 +364,20 @@ class AAService {
   /**
    * Get all members' AA participation status in one request
    */
-  async getAllMembersAAParticipation(userId: string, limit?: number): Promise<ApiResponse<{ [memberName: string]: { [date: string]: boolean } }>> {
+  async getAllMembersAAParticipation(requestUserId: string, limit?: number): Promise<ApiResponse<{ [memberName: string]: { [date: string]: boolean } }>> {
     try {
       // Import guild service to get complete member list
       const guildService = require('./guildService').default;
       
+      // Get actual data storage user ID
+      const dataUserId = await this.getDataUserId(requestUserId);
+      
       // Get all guild members
-      const allGuildMembers = await guildService.getAllMembers(userId);
+      const allGuildMembers = await guildService.getAllMembers(dataUserId);
       console.log('🔍 AA getAllMembers response:', { memberCount: allGuildMembers.length });
       
       // Get all AA dates
-      const datesResult = await this.getAllAADates(userId);
+      const datesResult = await this.getAllAADates(requestUserId);
       if (!datesResult.success || !datesResult.data) {
         return {
           success: true,
@@ -376,7 +405,7 @@ class AAService {
 
       // Update participation data for actual participants
       for (const date of recentDates) {
-        const aaDataResult = await this.getAADataByDate(userId, date);
+        const aaDataResult = await this.getAADataByDate(requestUserId, date);
         if (aaDataResult.success && aaDataResult.data) {
           const participants = aaDataResult.data.participants || [];
           
@@ -414,10 +443,10 @@ class AAService {
   /**
    * Get specific members' AA participation status
    */
-  async getMembersAAParticipation(userId: string, memberNames: string[], limit?: number): Promise<ApiResponse<{ [memberName: string]: { [date: string]: boolean } }>> {
+  async getMembersAAParticipation(requestUserId: string, memberNames: string[], limit?: number): Promise<ApiResponse<{ [memberName: string]: { [date: string]: boolean } }>> {
     try {
       // Get all AA dates
-      const datesResult = await this.getAllAADates(userId);
+      const datesResult = await this.getAllAADates(requestUserId);
       if (!datesResult.success || !datesResult.data) {
         return {
           success: true,
@@ -437,7 +466,7 @@ class AAService {
 
       // Check participation status for each date
       for (const date of recentDates) {
-        const aaDataResult = await this.getAADataByDate(userId, date);
+        const aaDataResult = await this.getAADataByDate(requestUserId, date);
         if (aaDataResult.success && aaDataResult.data) {
           const participants = aaDataResult.data.participants || [];
           const participantNames = new Set(participants.map(p => p.name));

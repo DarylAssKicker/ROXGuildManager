@@ -143,7 +143,7 @@ export interface OutputFormat {
 export interface User {
   id: string;
   username: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'owner' | 'editor' | 'viewer';
   createdAt: string;
   lastLoginAt?: string;
 }

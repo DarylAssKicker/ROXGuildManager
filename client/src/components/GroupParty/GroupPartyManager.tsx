@@ -34,6 +34,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { getEmptyImage } from 'react-dnd-html5-backend';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useGuildMembers } from '../../hooks/useGuildMembers';
+import { usePermissions } from '../../hooks/usePermissions';
 import groupPartyApi, { 
   Group, 
   Party, 
@@ -66,13 +67,15 @@ interface MemberCardProps {
 
 const MemberCard: React.FC<MemberCardProps> = ({ member, isInParty = false, onRemove, getClassColor, showClassText = true }) => {
   const { t } = useTranslation();
+  const { canUpdate } = usePermissions();
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.MEMBER,
     item: { member },
+    canDrag: () => canUpdate('parties'),
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-  }), [member]); // Ensure re-initialization when member data changes
+  }), [member, canUpdate]); // Ensure re-initialization when member data changes
 
   // Get class background color
   const classBackgroundColor = getClassColor ? getClassColor(member.class || '') : '#f0f0f040';
@@ -127,7 +130,7 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, isInParty = false, onRe
       {member.partyDic && Object.values(member.partyDic).some((party: any) => party.isPartyLeader) && (
         <CrownOutlined style={{ color: '#faad14', position: 'absolute', top: '4px', right: '4px' }} />
       )}
-      {isInParty && onRemove && (
+      {isInParty && onRemove && canUpdate('parties') && (
         <Button
           type="text"
           size="small"
@@ -306,6 +309,7 @@ const CustomDragLayer: React.FC<CustomDragLayerProps> = ({ getClassColor }) => {
 
 const DraggableMember: React.FC<DraggableMemberProps> = ({ member, partyId, slotIndex, isLeaderSlot, onRemoveMember, getClassColor, editMode, showClassText = true }) => {
   const { t } = useTranslation();
+  const { canUpdate } = usePermissions();
   console.log(`🎯 DraggableMember setup:`, { 
     memberName: member.name, 
     memberId: member.id, 
@@ -320,10 +324,11 @@ const DraggableMember: React.FC<DraggableMemberProps> = ({ member, partyId, slot
       sourcePartyId: partyId, 
       sourceSlotIndex: slotIndex 
     },
+    canDrag: () => canUpdate('parties'),
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-  }), [member, partyId, slotIndex]); // Dependency array ensures re-initialization when data changes
+  }), [member, partyId, slotIndex, canUpdate]); // Dependency array ensures re-initialization when data changes
 
   return (
     <div
@@ -373,7 +378,7 @@ const DraggableMember: React.FC<DraggableMemberProps> = ({ member, partyId, slot
           <span style={{ fontWeight: 'normal' }}> ({member.class || t('groupParty.positions.unknown')})</span>
         )}
       </div>
-      {editMode && (
+      {editMode && canUpdate('parties') && (
         <Button
           type="text"
           size="small"
@@ -466,6 +471,7 @@ const PartySlot: React.FC<PartySlotProps> = ({ member, partyId, slotIndex, isLea
 const GroupPartyManager: React.FC = () => {
   const { t } = useTranslation();
   const { members, fetchMembers } = useGuildMembers();
+  const { canCreate, canDelete, canUpdate } = usePermissions();
   
   // State management
   const [parties, setParties] = useState<PartyWithMembers[]>([]);
@@ -961,7 +967,8 @@ const GroupPartyManager: React.FC = () => {
               <span style={{ fontSize: '14px', color: '#666' }}>{t('groupParty.editMode')}:</span>
               <Switch 
                  checked={editMode}
-                 onChange={setEditMode}
+                 onChange={canUpdate('parties') ? setEditMode : undefined}
+                 disabled={!canUpdate('parties')}
                  size="small"
                />
             </Space>
@@ -978,24 +985,28 @@ const GroupPartyManager: React.FC = () => {
           </div>
           {editMode && (
             <Space>
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />}
-                onClick={() => {
-                  setEditingParty(null);
-                  partyForm.resetFields();
-                  setPartyModalVisible(true);
-                }}
-              >
-                {t('groupParty.createEditModal.createTitle')}
-              </Button>
-              <Button 
-                danger
-                icon={<DeleteOutlined />}
-                onClick={handleClearAllParties}
-              >
-                {t('groupParty.actions.clearAll')}
-              </Button>
+              {canCreate('parties') && (
+                <Button 
+                  type="primary" 
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    setEditingParty(null);
+                    partyForm.resetFields();
+                    setPartyModalVisible(true);
+                  }}
+                >
+                  {t('groupParty.createEditModal.createTitle')}
+                </Button>
+              )}
+              {canDelete('parties') && (
+                <Button 
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={handleClearAllParties}
+                >
+                  {t('groupParty.actions.clearAll')}
+                </Button>
+              )}
             </Space>
           )}
         </div>
@@ -1041,25 +1052,29 @@ const GroupPartyManager: React.FC = () => {
                                     <span style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{party.name}</span>
                                     {editMode && (
                                       <Space size={2}>
-                                        <Button 
-                                          type="text" 
-                                          size="small" 
-                                          icon={<EditOutlined style={{ fontSize: '10px' }} />}
-                                          onClick={() => {
-                                            setEditingParty(party);
-                                            partyForm.setFieldsValue(party);
-                                            setPartyModalVisible(true);
-                                          }}
-                                          style={{ padding: '2px', minWidth: '20px', height: '20px' }}
-                                        />
-                                        <Button 
-                                          type="text" 
-                                          size="small" 
-                                          danger
-                                          icon={<DeleteOutlined style={{ fontSize: '10px' }} />}
-                                          onClick={() => handleDeleteParty(party.id)}
-                                          style={{ padding: '2px', minWidth: '20px', height: '20px' }}
-                                        />
+                                        {canUpdate('parties') && (
+                                          <Button 
+                                            type="text" 
+                                            size="small" 
+                                            icon={<EditOutlined style={{ fontSize: '10px' }} />}
+                                            onClick={() => {
+                                              setEditingParty(party);
+                                              partyForm.setFieldsValue(party);
+                                              setPartyModalVisible(true);
+                                            }}
+                                            style={{ padding: '2px', minWidth: '20px', height: '20px' }}
+                                          />
+                                        )}
+                                        {canDelete('parties') && (
+                                          <Button 
+                                            type="text" 
+                                            size="small" 
+                                            danger
+                                            icon={<DeleteOutlined style={{ fontSize: '10px' }} />}
+                                            onClick={() => handleDeleteParty(party.id)}
+                                            style={{ padding: '2px', minWidth: '20px', height: '20px' }}
+                                          />
+                                        )}
                                       </Space>
                                     )}
                                   </div>
@@ -1195,25 +1210,29 @@ const GroupPartyManager: React.FC = () => {
                                                 <span style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{party.name}</span>
                                                 {editMode && (
                                                   <Space size={2}>
-                                                    <Button 
-                                                      type="text" 
-                                                      size="small" 
-                                                      icon={<EditOutlined style={{ fontSize: '10px' }} />}
-                                                      onClick={() => {
-                                                        setEditingParty(party);
-                                                        partyForm.setFieldsValue(party);
-                                                        setPartyModalVisible(true);
-                                                      }}
-                                                      style={{ padding: '2px', minWidth: '20px', height: '20px' }}
-                                                    />
-                                                    <Button 
-                                                      type="text" 
-                                                      size="small" 
-                                                      danger
-                                                      icon={<DeleteOutlined style={{ fontSize: '10px' }} />}
-                                                      onClick={() => handleDeleteParty(party.id)}
-                                                      style={{ padding: '2px', minWidth: '20px', height: '20px' }}
-                                                    />
+                                                    {canUpdate('parties') && (
+                                                      <Button 
+                                                        type="text" 
+                                                        size="small" 
+                                                        icon={<EditOutlined style={{ fontSize: '10px' }} />}
+                                                        onClick={() => {
+                                                          setEditingParty(party);
+                                                          partyForm.setFieldsValue(party);
+                                                          setPartyModalVisible(true);
+                                                        }}
+                                                        style={{ padding: '2px', minWidth: '20px', height: '20px' }}
+                                                      />
+                                                    )}
+                                                    {canDelete('parties') && (
+                                                      <Button 
+                                                        type="text" 
+                                                        size="small" 
+                                                        danger
+                                                        icon={<DeleteOutlined style={{ fontSize: '10px' }} />}
+                                                        onClick={() => handleDeleteParty(party.id)}
+                                                        style={{ padding: '2px', minWidth: '20px', height: '20px' }}
+                                                      />
+                                                    )}
                                                   </Space>
                                                 )}
                                               </div>

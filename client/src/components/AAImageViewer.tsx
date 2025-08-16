@@ -4,6 +4,7 @@ import { EyeOutlined, DownloadOutlined, DeleteOutlined, FolderOutlined, Appstore
 import { RcFile, UploadFile } from 'antd/es/upload';
 import { aaApi } from '../services/api';
 import { useTranslation } from '../hooks/useTranslation';
+import { useAuth } from '../contexts/AuthContext';
 import dayjs from 'dayjs';
 
 const { Text, Title } = Typography;
@@ -23,6 +24,7 @@ interface AAImage {
 
 const AAImageViewer: React.FC<AAImageViewerProps> = ({ visible, onClose, date }) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [images, setImages] = useState<AAImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -283,30 +285,32 @@ const AAImageViewer: React.FC<AAImageViewerProps> = ({ visible, onClose, date })
           {/* Action button area */}
           <div style={{ marginBottom: 16, flexShrink: 0 }}>
             <Space wrap>
-              {/* Upload section */}
-              <Space>
-                <Upload
-                  fileList={fileList}
-                  onChange={handleFileListChange}
-                  beforeUpload={beforeUpload}
-                  accept="image/*"
-                  multiple
-                  showUploadList={false}
-                >
-                  <Button icon={<UploadOutlined />}>
-                    Select Images ({fileList.length})
-                  </Button>
-                </Upload>
-                {fileList.length > 0 && (
-                  <Button
-                    type="primary"
-                    onClick={handleUpload}
-                    loading={uploadLoading}
+              {/* Upload section - only show for non-viewer users */}
+              {user?.role !== 'viewer' && (
+                <Space>
+                  <Upload
+                    fileList={fileList}
+                    onChange={handleFileListChange}
+                    beforeUpload={beforeUpload}
+                    accept="image/*"
+                    multiple
+                    showUploadList={false}
                   >
-                    Upload {fileList.length} Image(s)
-                  </Button>
-                )}
-              </Space>
+                    <Button icon={<UploadOutlined />}>
+                      Select Images ({fileList.length})
+                    </Button>
+                  </Upload>
+                  {fileList.length > 0 && (
+                    <Button
+                      type="primary"
+                      onClick={handleUpload}
+                      loading={uploadLoading}
+                    >
+                      Upload {fileList.length} Image(s)
+                    </Button>
+                  )}
+                </Space>
+              )}
               
               {/* Stitch section - only show when there are images */}
               {images.length > 0 && (

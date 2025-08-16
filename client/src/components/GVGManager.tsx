@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import DataManager from '../services/DataManager';
 import { useTranslation } from '../hooks/useTranslation';
 import { usePermissions } from '../hooks/usePermissions';
+import { useAuth } from '../contexts/AuthContext';
 import { getClassColor } from '../utils/classColors';
 import { classesApi } from '../services/api';
 
@@ -21,6 +22,7 @@ interface GVGManagerProps {}
 const GVGManager: React.FC<GVGManagerProps> = () => {
   const { t } = useTranslation();
   const { canCreate, canDelete, canUpdate } = usePermissions();
+  const { user } = useAuth();
   const [isImageRecognitionVisible, setIsImageRecognitionVisible] = useState(false);
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const [importType, setImportType] = useState<'file' | 'text'>('file');
@@ -228,6 +230,9 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
             allData.push(dataResponse.data.data);
           }
         }
+        
+        // Sort by date in descending order (newest first)
+        allData.sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf());
         
         setServerData(allData);
       } else {
@@ -596,29 +601,33 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
                       >
                         Images
                       </Button>
-                      <Button
-                        size="small"
-                        onClick={() => {
-                          setImportedData([record]);
-                          message.success(t('gvg.loadedToEdit'));
-                        }}
-                      >
-                        {t('gvg.edit')}
-                      </Button>
-                      <Popconfirm
-                        title={t('gvg.confirmDelete')}
-                        onConfirm={() => handleDeleteServerData(record.date)}
-                        okText={t('common.confirm')}
-                        cancelText={t('common.cancel')}
-                      >
+                      {user?.role !== 'viewer' && (
                         <Button
                           size="small"
-                          danger
-                          icon={<DeleteOutlined />}
+                          onClick={() => {
+                            setImportedData([record]);
+                            message.success(t('gvg.loadedToEdit'));
+                          }}
                         >
-                          {t('gvg.delete')}
+                          {t('gvg.edit')}
                         </Button>
-                      </Popconfirm>
+                      )}
+                      {user?.role !== 'viewer' && (
+                        <Popconfirm
+                          title={t('gvg.confirmDelete')}
+                          onConfirm={() => handleDeleteServerData(record.date)}
+                          okText={t('common.confirm')}
+                          cancelText={t('common.cancel')}
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                          >
+                            {t('gvg.delete')}
+                          </Button>
+                        </Popconfirm>
+                      )}
                     </Space>
                   ),
                 },

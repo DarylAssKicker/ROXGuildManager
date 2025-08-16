@@ -218,6 +218,9 @@ const KVMManager: React.FC<KVMManagerProps> = () => {
           }
         }
         
+        // Sort by date in descending order (newest first)
+        allData.sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf());
+        
         setServerData(allData);
       } else {
         // Server returned failure, but it might just be no data

@@ -219,6 +219,9 @@ const AAManager: React.FC<AAManagerProps> = () => {
           }
         }
         
+        // Sort by date in descending order (newest first)
+        allData.sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf());
+        
         setServerData(allData);
       }
       

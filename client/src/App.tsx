@@ -142,22 +142,24 @@ const App: React.FC = () => {
       icon: <BarChartOutlined />,
       label: t('navigation.dataAnalysis'),
     },
-    {
+    // Only show screenshot upload for non-viewer users
+    ...(user?.role !== 'viewer' ? [{
       key: 'screenshot',
       icon: <CameraOutlined />,
       label: t('navigation.screenshotUpload'),
-    },
+    }] : []),
     // Only show sub-accounts menu for owner/admin users
     ...(user?.role === 'owner' || user?.role === 'admin' ? [{
       key: 'subaccounts',
       icon: <UsergroupDeleteOutlined />,
       label: t('subAccount.title'),
     }] : []),
-    {
+    // Only show settings for non-viewer users
+    ...(user?.role !== 'viewer' ? [{
       key: 'settings',
       icon: <SettingOutlined />,
       label: t('navigation.settings'),
-    },
+    }] : []),
     {
       key: 'appinfo',
       icon: <InfoCircleOutlined />,

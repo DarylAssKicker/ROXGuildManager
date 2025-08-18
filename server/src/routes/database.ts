@@ -55,6 +55,22 @@ const upload = multer({
   }
 });
 
+// Configure multer for zip uploads
+const zipUpload = multer({
+  dest: 'uploads/temp/', // Temporary storage for zip files
+  limits: {
+    fileSize: 100 * 1024 * 1024 // 100MB limit for zip files
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow zip files
+    if (file.mimetype === 'application/zip' || file.originalname.toLowerCase().endsWith('.zip')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only ZIP files are allowed'));
+    }
+  }
+});
+
 const router = Router();
 
 // Database status and health check
@@ -86,6 +102,10 @@ router.delete('/cache/:key', databaseController.deleteCache);
 
 // File upload
 router.post('/upload/background', upload.single('backgroundImage'), databaseController.uploadBackgroundImage);
+
+// Images management
+router.get('/images/download', databaseController.downloadImages);
+router.post('/images/upload', zipUpload.single('imagesZip'), databaseController.uploadImages);
 
 // Guild name resource management
 router.get('/guild-name', databaseController.getGuildNameResource);

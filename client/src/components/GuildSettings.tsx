@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Form, Input, Button, message, Upload, Card, Typography, Space, Divider, Modal } from 'antd';
-import { UploadOutlined, DeleteOutlined, DownloadOutlined, ImportOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { UploadOutlined, DeleteOutlined, DownloadOutlined, ImportOutlined, ExclamationCircleOutlined, FileZipOutlined } from '@ant-design/icons';
 import type { UploadProps, UploadFile } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { guildNameApi, dataApi } from '../services/api';
@@ -15,11 +15,14 @@ const GuildSettings: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
+  const [downloadImagesLoading, setDownloadImagesLoading] = useState(false);
+  const [uploadImagesLoading, setUploadImagesLoading] = useState(false);
   const [guildName, setGuildName] = useState<string>('ROXGuild');
   const [backgroundImage, setBackgroundImage] = useState<string>(''); // Complete URL for display
   const [backgroundImagePath, setBackgroundImagePath] = useState<string>(''); // Relative path for database storage
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageZipInputRef = useRef<HTMLInputElement>(null);
 
   // Load guild name
   useEffect(() => {
@@ -265,6 +268,89 @@ const GuildSettings: React.FC = () => {
     }
   };
 
+  // Download images functionality
+  const handleDownloadImages = async () => {
+    setDownloadImagesLoading(true);
+    try {
+      const response = await guildNameApi.downloadImages();
+      
+      // Create download link for blob
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `images-${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      message.success('Images downloaded successfully');
+    } catch (error) {
+      console.error('Download images failed:', error);
+      message.error('Failed to download images');
+    } finally {
+      setDownloadImagesLoading(false);
+    }
+  };
+
+  // Upload images functionality
+  const handleUploadImages = () => {
+    if (imageZipInputRef.current) {
+      imageZipInputRef.current.click();
+    }
+  };
+
+  const handleImageZipFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+      message.error('Only ZIP files are allowed');
+      return;
+    }
+
+    // Show confirmation dialog
+    Modal.confirm({
+      title: 'Upload Images',
+      content: 'This will replace all existing images. Are you sure you want to continue?',
+      icon: <ExclamationCircleOutlined />,
+      okType: 'danger',
+      onOk: () => {
+        processImageZipFile(file);
+      },
+    });
+  };
+
+  const processImageZipFile = async (file: File) => {
+    setUploadImagesLoading(true);
+    try {
+      const response = await guildNameApi.uploadImages(file);
+      if (response.data.success) {
+        message.success('Images uploaded and extracted successfully');
+        
+        // Refresh background image if it exists
+        await loadGuildName();
+        
+        // Trigger custom event to refresh other components
+        window.dispatchEvent(new CustomEvent('imagesUpdated'));
+      } else {
+        throw new Error(response.data.error || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload images failed:', error);
+      message.error('Failed to upload images');
+    } finally {
+      setUploadImagesLoading(false);
+      // Clear file input
+      if (imageZipInputRef.current) {
+        imageZipInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <div style={{ padding: '24px', maxWidth: '600px' }}>
       <Title level={4} style={{ marginBottom: '24px' }}>{t('settings.guild.title')}</Title>
@@ -385,6 +471,14 @@ const GuildSettings: React.FC = () => {
           >
             {t('settings.guild.exportData')}
           </Button>
+          
+          <Button 
+            icon={<FileZipOutlined />}
+            onClick={handleDownloadImages}
+            loading={downloadImagesLoading}
+          >
+            Download Images
+          </Button>
         </Space>
 
         <div style={{ marginBottom: '16px' }}>
@@ -402,6 +496,15 @@ const GuildSettings: React.FC = () => {
           >
             {t('settings.guild.importData')}
           </Button>
+          
+          <Button 
+            danger
+            icon={<UploadOutlined />}
+            onClick={handleUploadImages}
+            loading={uploadImagesLoading}
+          >
+            Upload Images
+          </Button>
         </Space>
 
         {/* Hidden file input */}
@@ -411,6 +514,15 @@ const GuildSettings: React.FC = () => {
           accept=".json,application/json"
           style={{ display: 'none' }}
           onChange={handleFileSelect}
+        />
+        
+        {/* Hidden file input for images zip */}
+        <input
+          ref={imageZipInputRef}
+          type="file"
+          accept=".zip,application/zip"
+          style={{ display: 'none' }}
+          onChange={handleImageZipFileSelect}
         />
       </Card>
     </div>

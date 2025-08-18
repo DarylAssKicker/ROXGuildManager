@@ -298,6 +298,24 @@ export const guildNameApi = {
         'Content-Type': 'multipart/form-data'
       }
     });
+  },
+
+  // Download images as zip
+  downloadImages: () => {
+    return apiClient.get('/database/images/download', {
+      responseType: 'blob'
+    });
+  },
+
+  // Upload images zip
+  uploadImages: (file: File) => {
+    const formData = new FormData();
+    formData.append('imagesZip', file);
+    return apiClient.post('/database/images/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
   }
 };
 

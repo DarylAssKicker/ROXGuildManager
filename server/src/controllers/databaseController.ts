@@ -2,6 +2,10 @@ import { Request, Response } from 'express';
 import { databaseService } from '../services/databaseService';
 import { GuildNameResource, CreateGuildNameRequest, UpdateGuildNameRequest } from '../types';
 import { getDataUserId } from '../middleware/permissionMiddleware';
+import * as path from 'path';
+import * as fs from 'fs-extra';
+import archiver from 'archiver';
+import extract from 'extract-zip';
 
 export class DatabaseController {
   /**
@@ -819,6 +823,175 @@ export class DatabaseController {
       res.status(500).json({
         success: false,
         error: 'Failed to clear and import account data'
+      });
+    }
+  }
+
+  /**
+   * Download user images as zip
+   */
+  async downloadImages(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'User not authenticated'
+        });
+        return;
+      }
+      
+      const dataUserId = getDataUserId(req);
+      let imagesDir: string;
+      
+      if (process.env.NODE_ENV === 'production') {
+        // Production: Docker maps uploads to client/public/images
+        imagesDir = path.join(process.cwd(), 'client/public/images', dataUserId);
+      } else {
+        // Development: Use client/public/images directly
+        imagesDir = path.join(__dirname, '../../../client/public/images', dataUserId);
+      }
+      
+      // Check if images directory exists
+      if (!await fs.pathExists(imagesDir)) {
+        res.status(404).json({
+          success: false,
+          error: 'No images found for this user'
+        });
+        return;
+      }
+      
+      // Set response headers for zip download
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename=images-${dataUserId}.zip`);
+      
+      // Create archiver instance
+      const archive = archiver('zip', {
+        zlib: { level: 9 } // Maximum compression
+      });
+      
+      // Listen for archive errors
+      archive.on('error', (err: Error) => {
+        console.error('Archive error:', err);
+        if (!res.headersSent) {
+          res.status(500).json({
+            success: false,
+            error: 'Failed to create zip archive'
+          });
+        }
+      });
+      
+      // Pipe archive data to response
+      archive.pipe(res);
+      
+      // Add all files from images directory to zip
+      archive.directory(imagesDir, false);
+      
+      // Finalize the archive
+      await archive.finalize();
+      
+    } catch (error) {
+      console.error('Failed to download images:', error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to download images'
+        });
+      }
+    }
+  }
+
+  /**
+   * Upload and extract images zip
+   */
+  async uploadImages(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'User not authenticated'
+        });
+        return;
+      }
+      
+      const dataUserId = getDataUserId(req);
+      
+      if (!req.file) {
+        res.status(400).json({
+          success: false,
+          error: 'No zip file uploaded'
+        });
+        return;
+      }
+      
+      // Check file type
+      if (!req.file.originalname.toLowerCase().endsWith('.zip')) {
+        res.status(400).json({
+          success: false,
+          error: 'Only ZIP files are allowed'
+        });
+        return;
+      }
+      
+      const zipFilePath = req.file.path;
+      let imagesDir: string;
+      
+      if (process.env.NODE_ENV === 'production') {
+        // Production: Docker maps uploads to client/public/images
+        imagesDir = path.join(process.cwd(), 'client/public/images', dataUserId);
+      } else {
+        // Development: Use client/public/images directly
+        imagesDir = path.join(__dirname, '../../../client/public/images', dataUserId);
+      }
+      
+      const tempDir = path.join(process.cwd(), 'uploads', 'temp', dataUserId);
+      
+      try {
+        // Remove existing images directory
+        if (await fs.pathExists(imagesDir)) {
+          await fs.remove(imagesDir);
+        }
+        
+        // Create temp directory for extraction
+        await fs.ensureDir(tempDir);
+        
+        // Extract zip file to temp directory
+        await extract(zipFilePath, { dir: tempDir });
+        
+        // Move extracted files to images directory
+        await fs.ensureDir(imagesDir);
+        await fs.copy(tempDir, imagesDir);
+        
+        // Clean up temp directory and zip file
+        await fs.remove(tempDir);
+        await fs.remove(zipFilePath);
+        
+        res.json({
+          success: true,
+          message: 'Images uploaded and extracted successfully'
+        });
+        
+      } catch (extractError) {
+        console.error('Failed to extract zip file:', extractError);
+        
+        // Clean up files on error
+        if (await fs.pathExists(tempDir)) {
+          await fs.remove(tempDir);
+        }
+        if (await fs.pathExists(zipFilePath)) {
+          await fs.remove(zipFilePath);
+        }
+        
+        res.status(500).json({
+          success: false,
+          error: 'Failed to extract zip file'
+        });
+      }
+      
+    } catch (error) {
+      console.error('Failed to upload images:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to upload images'
       });
     }
   }

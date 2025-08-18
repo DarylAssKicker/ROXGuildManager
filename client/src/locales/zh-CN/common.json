@@ -57,7 +57,19 @@
       "fileTooLarge": "图片大小不能超过5MB！",
       "createDefaultFailed": "创建默认公会名称失败:",
       "description": "说明：",
-      "descriptionText": "公会名称将显示在应用程序的顶部标题栏中。修改后需要保存才能生效。"
+      "descriptionText": "公会名称将显示在应用程序的顶部标题栏中。修改后需要保存才能生效。",
+      "dataManagement": "数据管理",
+      "exportData": "导出数据",
+      "importData": "导入数据",
+      "exportSuccess": "数据导出成功！",
+      "exportFailed": "导出失败，请重试",
+      "importSuccess": "数据导入成功！",
+      "importFailed": "导入失败，请重试",
+      "importConfirm": "导入数据将会清空当前所有公会数据，确定要继续吗？",
+      "selectFile": "请选择要导入的JSON文件",
+      "invalidFile": "无效的文件格式，请选择JSON文件",
+      "exportDescription": "导出功能将会保存当前账号下所有的公会数据，包括成员、AA、GVG、KVM等信息。",
+      "importDescription": "导入功能将会清空当前所有数据并导入新的数据，请谨慎操作。"
     }
   },
   "common": {

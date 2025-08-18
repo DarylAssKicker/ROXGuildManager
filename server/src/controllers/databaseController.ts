@@ -725,6 +725,82 @@ export class DatabaseController {
       });
     }
   }
+
+  /**
+   * Export all account guild data (aa, gvg, guild, parties, etc.)
+   */
+  async exportAccountData(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'User not authenticated'
+        });
+        return;
+      }
+      
+      const dataUserId = getDataUserId(req);
+      const exportData = await databaseService.exportAllAccountData(dataUserId);
+      
+      res.json({
+        success: true,
+        data: exportData,
+        message: 'Successfully exported account data'
+      });
+    } catch (error) {
+      console.error('Failed to export account data:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to export account data'
+      });
+    }
+  }
+
+  /**
+   * Clear all account data and import new data
+   */
+  async clearAndImportData(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'User not authenticated'
+        });
+        return;
+      }
+      
+      const dataUserId = getDataUserId(req);
+      const { data } = req.body;
+      
+      if (!data) {
+        res.status(400).json({
+          success: false,
+          error: 'Missing import data'
+        });
+        return;
+      }
+
+      const success = await databaseService.clearAndImportAccountData(dataUserId, data);
+      
+      if (success) {
+        res.json({
+          success: true,
+          message: 'Successfully cleared and imported account data'
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to clear and import account data'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to clear and import account data:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to clear and import account data'
+      });
+    }
+  }
 }
 
 export const databaseController = new DatabaseController();

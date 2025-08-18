@@ -57,7 +57,19 @@
       "fileTooLarge": "Image size cannot exceed 5MB!",
       "createDefaultFailed": "Failed to create default guild name:",
       "description": "Note:",
-      "descriptionText": "The guild name will be displayed in the top title bar of the application. Changes need to be saved to take effect."
+      "descriptionText": "The guild name will be displayed in the top title bar of the application. Changes need to be saved to take effect.",
+      "dataManagement": "Data Management",
+      "exportData": "Export Data",
+      "importData": "Import Data",
+      "exportSuccess": "Data exported successfully!",
+      "exportFailed": "Export failed, please try again",
+      "importSuccess": "Data imported successfully!",
+      "importFailed": "Import failed, please try again",
+      "importConfirm": "Importing data will clear all current guild data. Are you sure you want to continue?",
+      "selectFile": "Please select a JSON file to import",
+      "invalidFile": "Invalid file format, please select a JSON file",
+      "exportDescription": "Export function will save all guild data under current account, including members, AA, GVG, KVM and other information.",
+      "importDescription": "Import function will clear all current data and import new data, please proceed with caution."
     }
   },
   "common": {

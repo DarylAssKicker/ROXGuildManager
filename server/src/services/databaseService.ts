@@ -593,14 +593,9 @@ export class DatabaseService {
     if (!this.redis) return [];
 
     try {
-      const key = `user:${userId}:aa:dates`;
-      const data = await this.redis.get(key);
-      
-      if (data) {
-        return JSON.parse(data) as string[];
-      }
-      
-      return [];
+      // AA dates are stored as sorted set, not regular key-value
+      const dates = await this.redis.zrange(`user:${userId}:aa:dates`, 0, -1);
+      return dates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
     } catch (error) {
       console.error('Failed to get AA date list:', error);
       return [];
@@ -678,14 +673,9 @@ export class DatabaseService {
     if (!this.redis) return [];
 
     try {
-      const key = `user:${userId}:gvg:dates`;
-      const data = await this.redis.get(key);
-      
-      if (data) {
-        return JSON.parse(data) as string[];
-      }
-      
-      return [];
+      // GVG dates are stored as sorted set, not regular key-value
+      const dates = await this.redis.zrange(`user:${userId}:gvg:dates`, 0, -1);
+      return dates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
     } catch (error) {
       console.error('Failed to get GVG date list:', error);
       return [];
@@ -763,14 +753,9 @@ export class DatabaseService {
     if (!this.redis) return [];
 
     try {
-      const key = `user:${userId}:kvm:dates`;
-      const data = await this.redis.get(key);
-      
-      if (data) {
-        return JSON.parse(data) as string[];
-      }
-      
-      return [];
+      // KVM dates are stored as sorted set, not regular key-value
+      const dates = await this.redis.zrange(`user:${userId}:kvm:dates`, 0, -1);
+      return dates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
     } catch (error) {
       console.error('Failed to get KVM date list:', error);
       return [];
@@ -1120,6 +1105,208 @@ export class DatabaseService {
       return true;
     } catch (error) {
       console.error('Data operation failed:', error);
+      return false;
+    }
+  }
+
+  // ==================== Data Export/Import ====================
+
+  /**
+   * Export all account guild data
+   */
+  async exportAllAccountData(userId: string): Promise<any> {
+    if (!this.redis) return null;
+
+    try {
+      const exportData = {
+        userId,
+        exportDate: new Date().toISOString(),
+        data: {
+          guildMembers: await this.getGuildMembers(userId),
+          guildNameResource: await this.getGuildNameResource(userId),
+          groups: await this.getGroups(userId),
+          parties: await this.getParties(userId),
+          aa: {
+            dates: await this.getAADates(userId),
+            data: {} as any
+          },
+          gvg: {
+            dates: await this.getGVGDates(userId),
+            data: {} as any
+          },
+          kvm: {
+            dates: await this.getKVMDates(userId),
+            data: {} as any
+          }
+        }
+      };
+
+      // Export AA data for all dates
+      console.log(`📅 AA dates found: ${exportData.data.aa.dates.length} dates`);
+      for (const date of exportData.data.aa.dates) {
+        const aaData = await this.getAAData(userId, date);
+        exportData.data.aa.data[date] = aaData;
+        console.log(`📊 AA data for ${date}: ${aaData ? 'found' : 'null'}`);
+      }
+
+      // Export GVG data for all dates
+      console.log(`📅 GVG dates found: ${exportData.data.gvg.dates.length} dates`);
+      for (const date of exportData.data.gvg.dates) {
+        const gvgData = await this.getGVGData(userId, date);
+        exportData.data.gvg.data[date] = gvgData;
+        console.log(`📊 GVG data for ${date}: ${gvgData ? 'found' : 'null'}`);
+      }
+
+      // Export KVM data for all dates
+      console.log(`📅 KVM dates found: ${exportData.data.kvm.dates.length} dates`);
+      for (const date of exportData.data.kvm.dates) {
+        const kvmData = await this.getKVMData(userId, date);
+        exportData.data.kvm.data[date] = kvmData;
+        console.log(`📊 KVM data for ${date}: ${kvmData ? 'found' : 'null'}`);
+      }
+
+      console.log(`✅ Exported all account data for user ${userId}`);
+      return exportData;
+    } catch (error) {
+      console.error('Failed to export account data:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Clear all account data and import new data
+   */
+  async clearAndImportAccountData(userId: string, importData: any): Promise<boolean> {
+    if (!this.redis) return false;
+
+    try {
+      // Clear existing data
+      await this.clearAccountData(userId);
+
+      if (!importData || !importData.data) {
+        console.error('Invalid import data structure');
+        return false;
+      }
+
+      const data = importData.data;
+
+      // Import guild members
+      if (data.guildMembers && Array.isArray(data.guildMembers)) {
+        await this.saveGuildMembers(userId, data.guildMembers);
+      }
+
+      // Import guild name resource
+      if (data.guildNameResource) {
+        await this.saveGuildNameResource(userId, data.guildNameResource);
+      }
+
+      // Import groups
+      if (data.groups && Array.isArray(data.groups)) {
+        await this.saveGroups(userId, data.groups);
+      }
+
+      // Import parties
+      if (data.parties && Array.isArray(data.parties)) {
+        await this.saveParties(userId, data.parties);
+      }
+
+      // Import AA data
+      if (data.aa && data.aa.data) {
+        for (const [date, aaData] of Object.entries(data.aa.data)) {
+          if (aaData) {
+            // Save AA data
+            const key = `user:${userId}:aa:${date}`;
+            await this.redis.set(key, JSON.stringify(aaData));
+            // Add date to sorted set
+            await this.redis.zadd(`user:${userId}:aa:dates`, new Date(date).getTime(), date);
+          }
+        }
+      }
+
+      // Import GVG data
+      if (data.gvg && data.gvg.data) {
+        for (const [date, gvgData] of Object.entries(data.gvg.data)) {
+          if (gvgData) {
+            // Save GVG data
+            const key = `user:${userId}:gvg:${date}`;
+            await this.redis.set(key, JSON.stringify(gvgData));
+            // Add date to sorted set
+            await this.redis.zadd(`user:${userId}:gvg:dates`, new Date(date).getTime(), date);
+          }
+        }
+      }
+
+      // Import KVM data
+      if (data.kvm && data.kvm.data) {
+        for (const [date, kvmData] of Object.entries(data.kvm.data)) {
+          if (kvmData) {
+            // Save KVM data
+            const key = `user:${userId}:kvm:${date}`;
+            await this.redis.set(key, JSON.stringify(kvmData));
+            // Add date to sorted set
+            await this.redis.zadd(`user:${userId}:kvm:dates`, new Date(date).getTime(), date);
+          }
+        }
+      }
+
+      console.log(`✅ Successfully cleared and imported account data for user ${userId}`);
+      return true;
+    } catch (error) {
+      console.error('Failed to clear and import account data:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Clear all account data (except user basic info)
+   */
+  async clearAccountData(userId: string): Promise<boolean> {
+    if (!this.redis) return false;
+
+    try {
+      // Delete guild members
+      await this.deleteGuildMembers(userId);
+
+      // Delete guild name resource
+      await this.deleteGuildNameResource(userId);
+
+      // Delete groups
+      await this.deleteGroups(userId);
+
+      // Delete parties
+      await this.deleteParties(userId);
+
+      // Delete AA data
+      const aaDates = await this.getAADates(userId);
+      for (const date of aaDates) {
+        const key = `user:${userId}:aa:${date}`;
+        await this.redis.del(key);
+      }
+      // Delete AA dates sorted set
+      await this.redis.del(`user:${userId}:aa:dates`);
+
+      // Delete GVG data
+      const gvgDates = await this.getGVGDates(userId);
+      for (const date of gvgDates) {
+        const key = `user:${userId}:gvg:${date}`;
+        await this.redis.del(key);
+      }
+      // Delete GVG dates sorted set
+      await this.redis.del(`user:${userId}:gvg:dates`);
+
+      // Delete KVM data
+      const kvmDates = await this.getKVMDates(userId);
+      for (const date of kvmDates) {
+        const key = `user:${userId}:kvm:${date}`;
+        await this.redis.del(key);
+      }
+      // Delete KVM dates sorted set
+      await this.redis.del(`user:${userId}:kvm:dates`);
+
+      console.log(`🗑️ Cleared all account data for user ${userId}`);
+      return true;
+    } catch (error) {
+      console.error('Failed to clear account data:', error);
       return false;
     }
   }

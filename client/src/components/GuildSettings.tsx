@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, message, Upload, Card, Typography, Space } from 'antd';
-import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useRef } from 'react';
+import { Form, Input, Button, message, Upload, Card, Typography, Space, Divider, Modal } from 'antd';
+import { UploadOutlined, DeleteOutlined, DownloadOutlined, ImportOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { UploadProps, UploadFile } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { guildNameApi } from '../services/api';
+import { guildNameApi, dataApi } from '../services/api';
 import { getStaticUrl } from '../utils/config';
 import { GuildNameResource } from '../types';
 
@@ -13,10 +13,13 @@ const GuildSettings: React.FC = () => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
   const [guildName, setGuildName] = useState<string>('ROXGuild');
   const [backgroundImage, setBackgroundImage] = useState<string>(''); // Complete URL for display
   const [backgroundImagePath, setBackgroundImagePath] = useState<string>(''); // Relative path for database storage
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load guild name
   useEffect(() => {
@@ -161,6 +164,107 @@ const GuildSettings: React.FC = () => {
     setFileList([]);
   };
 
+  // Export data functionality
+  const handleExportData = async () => {
+    setExportLoading(true);
+    try {
+      const response = await dataApi.exportData();
+      if (response.data.success) {
+        // Create download link
+        const data = response.data.data;
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `guild-data-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        message.success(t('settings.guild.exportSuccess'));
+      } else {
+        throw new Error(response.data.error || 'Export failed');
+      }
+    } catch (error) {
+      console.error('Export data failed:', error);
+      message.error(t('settings.guild.exportFailed'));
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  // Import data functionality
+  const handleImportData = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    if (!file.name.endsWith('.json') && file.type !== 'application/json') {
+      message.error(t('settings.guild.invalidFile'));
+      return;
+    }
+
+    // Show confirmation dialog
+    Modal.confirm({
+      title: t('settings.guild.importData'),
+      content: t('settings.guild.importConfirm'),
+      icon: <ExclamationCircleOutlined />,
+      okType: 'danger',
+      onOk: () => {
+        processImportFile(file);
+      },
+    });
+  };
+
+  const processImportFile = async (file: File) => {
+    setImportLoading(true);
+    try {
+      // Read file content
+      const fileContent = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onerror = reject;
+        reader.readAsText(file);
+      });
+
+      // Parse JSON
+      const importData = JSON.parse(fileContent);
+      
+      // Call import API
+      const response = await dataApi.importData(importData);
+      if (response.data.success) {
+        message.success(t('settings.guild.importSuccess'));
+        
+        // Refresh page data
+        await loadGuildName();
+        
+        // Trigger custom event to refresh other components
+        window.dispatchEvent(new CustomEvent('dataImported'));
+      } else {
+        throw new Error(response.data.error || 'Import failed');
+      }
+    } catch (error) {
+      console.error('Import data failed:', error);
+      message.error(t('settings.guild.importFailed'));
+    } finally {
+      setImportLoading(false);
+      // Clear file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <div style={{ padding: '24px', maxWidth: '600px' }}>
       <Title level={4} style={{ marginBottom: '24px' }}>{t('settings.guild.title')}</Title>
@@ -259,6 +363,56 @@ const GuildSettings: React.FC = () => {
           <strong>{t('settings.guild.description')}</strong>{t('settings.guild.descriptionText')}
         </Typography.Text>
       </div>
+
+      <Divider />
+
+      {/* Data Management Section */}
+      <Card>
+        <Title level={5} style={{ marginBottom: '16px' }}>{t('settings.guild.dataManagement')}</Title>
+        
+        <div style={{ marginBottom: '16px' }}>
+          <Typography.Text type="secondary">
+            {t('settings.guild.exportDescription')}
+          </Typography.Text>
+        </div>
+        
+        <Space style={{ marginBottom: '16px' }}>
+          <Button 
+            type="primary" 
+            icon={<DownloadOutlined />}
+            onClick={handleExportData}
+            loading={exportLoading}
+          >
+            {t('settings.guild.exportData')}
+          </Button>
+        </Space>
+
+        <div style={{ marginBottom: '16px' }}>
+          <Typography.Text type="secondary" style={{ color: '#ff7875' }}>
+            {t('settings.guild.importDescription')}
+          </Typography.Text>
+        </div>
+        
+        <Space>
+          <Button 
+            danger 
+            icon={<ImportOutlined />}
+            onClick={handleImportData}
+            loading={importLoading}
+          >
+            {t('settings.guild.importData')}
+          </Button>
+        </Space>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          style={{ display: 'none' }}
+          onChange={handleFileSelect}
+        />
+      </Card>
     </div>
   );
 };

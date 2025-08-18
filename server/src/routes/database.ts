@@ -90,4 +90,8 @@ router.delete('/guild-name', databaseController.deleteGuildNameResource);
 // Data management (use with caution)
 router.delete('/clear', databaseController.clearAll);
 
+// Data export/import
+router.get('/export', databaseController.exportAccountData);
+router.post('/import', databaseController.clearAndImportData);
+
 export default router;

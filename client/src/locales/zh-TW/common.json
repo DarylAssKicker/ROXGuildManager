@@ -57,7 +57,19 @@
       "fileTooLarge": "圖片大小不能超過5MB！",
       "createDefaultFailed": "建立預設公會名稱失敗:",
       "description": "說明：",
-      "descriptionText": "公會名稱將顯示在應用程式的頂部標題欄中。修改後需要儲存才能生效。"
+      "descriptionText": "公會名稱將顯示在應用程式的頂部標題欄中。修改後需要儲存才能生效。",
+      "dataManagement": "資料管理",
+      "exportData": "匯出資料",
+      "importData": "匯入資料",
+      "exportSuccess": "資料匯出成功！",
+      "exportFailed": "匯出失敗，請重試",
+      "importSuccess": "資料匯入成功！",
+      "importFailed": "匯入失敗，請重試",
+      "importConfirm": "匯入資料將會清空目前所有公會資料，確定要繼續嗎？",
+      "selectFile": "請選擇要匯入的JSON檔案",
+      "invalidFile": "無效的檔案格式，請選擇JSON檔案",
+      "exportDescription": "匯出功能將會儲存目前帳號下所有的公會資料，包括成員、AA、GVG、KVM等資訊。",
+      "importDescription": "匯入功能將會清空目前所有資料並匯入新的資料，請謹慎操作。"
     }
   },
   "common": {

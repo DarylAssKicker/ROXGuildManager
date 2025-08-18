@@ -14,8 +14,8 @@ async function createUser() {
 
   const [username, password, role] = args;
 
-  if (!['user', 'admin'].includes(role)) {
-    console.error('❌ Role must be user or admin');
+  if (!['user', 'admin', 'owner'].includes(role)) {
+    console.error('❌ Role must be user or admin or owner');
     process.exit(1);
   }
 

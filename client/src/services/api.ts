@@ -370,4 +370,13 @@ export const subAccountApi = {
   getMyPermissions: () => apiClient.get('/sub-accounts/me/permissions')
 };
 
+// Data export/import API
+export const dataApi = {
+  // Export all account guild data
+  exportData: () => apiClient.get('/database/export'),
+  
+  // Clear and import account data
+  importData: (data: any) => apiClient.post('/database/import', { data })
+};
+
 export default apiClient;

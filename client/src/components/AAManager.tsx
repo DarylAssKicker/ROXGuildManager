@@ -39,6 +39,8 @@ const AAManager: React.FC<AAManagerProps> = () => {
   const [classes, setClasses] = useState<{id: string, name: string, color?: string}[]>([]);
   const [imageViewerVisible, setImageViewerVisible] = useState<boolean>(false);
   const [selectedImageDate, setSelectedImageDate] = useState<string>('');
+  const [isEditingLocalData, setIsEditingLocalData] = useState<boolean>(false);
+  const [editingLocalDataText, setEditingLocalDataText] = useState<string>('');
   
   // Get DataManager instance
   const dataManager = DataManager.getInstance();
@@ -92,6 +94,23 @@ const AAManager: React.FC<AAManagerProps> = () => {
     setEditingDate(record.date);
     setIsDateEditing(false);
     setIsDetailModalVisible(true);
+  };
+
+  // Handle edit record - load to local data and enter edit mode
+  const handleEditRecord = (record: AAInfo) => {
+    // Load record to imported data
+    setImportedData([record]);
+    // Enter edit mode
+    setEditingLocalDataText(JSON.stringify([record], null, 2));
+    setIsEditingLocalData(true);
+    // Scroll to local data section
+    setTimeout(() => {
+      const localDataElement = document.querySelector('[data-testid="local-data-card"]');
+      if (localDataElement) {
+        localDataElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+    message.success('Record loaded to edit area');
   };
 
   // Handle name editing - only modify participant names in AA data, save directly after editing
@@ -461,6 +480,127 @@ const AAManager: React.FC<AAManagerProps> = () => {
     setImageViewerVisible(true);
   };
 
+  // Start editing local data
+  const handleStartEditLocalData = () => {
+    setEditingLocalDataText(JSON.stringify(importedData, null, 2));
+    setIsEditingLocalData(true);
+  };
+
+  // Save edited local data
+  const handleSaveLocalData = async () => {
+    try {
+      const parsedData = JSON.parse(editingLocalDataText);
+      const dataArray = Array.isArray(parsedData) ? parsedData : [parsedData];
+      setImportedData(dataArray);
+      setIsEditingLocalData(false);
+      message.success(t('aa.localDataUpdated'));
+      
+      // Auto save to server with the new data
+      if (dataArray.length > 0) {
+        message.info('Auto-saving to server...');
+        try {
+          setLoading(true);
+          // Use the parsed data directly instead of waiting for state update
+          await saveDataArrayToServer(dataArray);
+        } catch (error) {
+          console.error('Auto save to server failed:', error);
+          message.warning('Local data updated, but auto-save to server failed. Please manually click "Save to Server"');
+        } finally {
+          setLoading(false);
+        }
+      }
+    } catch (error) {
+      message.error(t('aa.jsonFormatError'));
+      console.error('Invalid JSON format:', error);
+    }
+  };
+
+  // Helper function to save data array to server
+  const saveDataArrayToServer = async (aaData: any[]) => {
+    console.log('Preparing to save AA data:', aaData);
+    
+    // Process each AA data, check if append is needed
+    const processedData = [];
+    for (const aaInfo of aaData) {
+      const isTodayDate = aaInfo.date === new Date().toISOString().split('T')[0];
+      
+      if (isTodayDate) {
+        try {
+          // Check if same date data exists
+          const existingResponse = await aaApi.getByDate(aaInfo.date);
+          if (existingResponse.data.success) {
+            // Same date data exists, append and deduplicate
+            const existingParticipants = existingResponse.data.data.participants || [];
+            const newParticipants = aaInfo.participants || [];
+            const combinedParticipants = [...existingParticipants, ...newParticipants];
+            const deduplicatedParticipants = deduplicateParticipants(combinedParticipants);
+            
+            console.log(`Found today's same date data, deduplicated after append: ${existingParticipants.length} + ${newParticipants.length} = ${deduplicatedParticipants.length}`);
+            message.info(t('aa.mergedWithExistingData', { 
+              existing: existingParticipants.length, 
+              new: newParticipants.length, 
+              final: deduplicatedParticipants.length 
+            }));
+            
+            // Delete original data first
+            await aaApi.deleteByDate(aaInfo.date);
+            
+            // Build merged data
+            processedData.push({
+              ...aaInfo,
+              participants: deduplicatedParticipants,
+              total_participants: deduplicatedParticipants.length
+            });
+          } else {
+            // No same date data exists, use new data directly (still need deduplication)
+            const deduplicatedParticipants = deduplicateParticipants(aaInfo.participants || []);
+            processedData.push({
+              ...aaInfo,
+              participants: deduplicatedParticipants,
+              total_participants: deduplicatedParticipants.length
+            });
+          }
+        } catch (error) {
+          console.log('Same date data does not exist, using new data');
+          const deduplicatedParticipants = deduplicateParticipants(aaInfo.participants || []);
+          processedData.push({
+            ...aaInfo,
+            participants: deduplicatedParticipants,
+            total_participants: deduplicatedParticipants.length
+          });
+        }
+      } else {
+        // Non-today data, overwrite directly (but still need deduplication)
+        const deduplicatedParticipants = deduplicateParticipants(aaInfo.participants || []);
+        processedData.push({
+          ...aaInfo,
+          participants: deduplicatedParticipants,
+          total_participants: deduplicatedParticipants.length
+        });
+      }
+    }
+    
+    const response = await aaApi.importData(processedData);
+    console.log('Server response:', response.data);
+    
+    if (response.data.success) {
+      message.success(response.data.message || 'Successfully saved to server');
+      // Clear imported data since it's now saved to server
+      setImportedData([]);
+      // Refresh cached data
+      await globalAAManager.refreshData();
+    } else {
+      console.error('Save failed, server response:', response.data);
+      throw new Error(response.data.error || response.data.message || 'Save failed');
+    }
+  };
+
+  // Cancel editing local data
+  const handleCancelEditLocalData = () => {
+    setIsEditingLocalData(false);
+    setEditingLocalDataText('');
+  };
+
   // Export data
   const handleExportData = () => {
     if (importedData.length === 0) {
@@ -584,17 +724,58 @@ const AAManager: React.FC<AAManagerProps> = () => {
       <div style={{ flex: 1, overflow: 'auto' }}>
         {/* Local imported data */}
         {importedData.length > 0 && (
-          <Card title={t('aa.localData')} style={{ marginBottom: 16 }}>
-            <pre style={{ 
-              maxHeight: '200px', 
-              overflow: 'auto', 
-              backgroundColor: '#f5f5f5', 
-              padding: '12px',
-              borderRadius: '4px',
-              fontSize: '12px'
-            }}>
-              {JSON.stringify(importedData, null, 2)}
-            </pre>
+          <Card 
+            data-testid="local-data-card"
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>{t('aa.localData')}</span>
+                <Space>
+                  {!isEditingLocalData ? (
+                    <Button 
+                      size="small" 
+                      onClick={handleStartEditLocalData}
+                      style={{ backgroundColor: '#1890ff', color: 'white', borderColor: '#1890ff' }}
+                    >
+                      {t('common.edit')}
+                    </Button>
+                  ) : (
+                    <>
+                      <Button size="small" onClick={handleSaveLocalData} type="primary">
+                        {t('common.save')}
+                      </Button>
+                      <Button size="small" onClick={handleCancelEditLocalData}>
+                        {t('common.cancel')}
+                      </Button>
+                    </>
+                  )}
+                </Space>
+              </div>
+            } 
+            style={{ marginBottom: 16 }}
+          >
+            {!isEditingLocalData ? (
+              <pre style={{ 
+                maxHeight: '200px', 
+                overflow: 'auto', 
+                backgroundColor: '#f5f5f5', 
+                padding: '12px',
+                borderRadius: '4px',
+                fontSize: '12px'
+              }}>
+                {JSON.stringify(importedData, null, 2)}
+              </pre>
+            ) : (
+              <TextArea
+                value={editingLocalDataText}
+                onChange={(e) => setEditingLocalDataText(e.target.value)}
+                rows={10}
+                style={{ 
+                  fontFamily: 'monospace',
+                  fontSize: '12px'
+                }}
+                placeholder={t('aa.pasteJsonData')}
+              />
+            )}
           </Card>
         )}
 
@@ -663,10 +844,7 @@ const AAManager: React.FC<AAManagerProps> = () => {
                       {canUpdate('aa') && (
                         <Button
                           size="small"
-                          onClick={() => {
-                            setImportedData([record]);
-                            message.success(t('aa.loadedToEdit'));
-                          }}
+                          onClick={() => handleEditRecord(record)}
                         >
                           {t('aa.edit')}
                         </Button>

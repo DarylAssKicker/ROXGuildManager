@@ -41,6 +41,8 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
   const [classes, setClasses] = useState<{id: string, name: string, color?: string}[]>([]);
   const [imageViewerVisible, setImageViewerVisible] = useState<boolean>(false);
   const [selectedImageDate, setSelectedImageDate] = useState<string>('');
+  const [isEditingLocalData, setIsEditingLocalData] = useState<boolean>(false);
+  const [editingLocalDataText, setEditingLocalDataText] = useState<string>('');
   
   // Get DataManager instance
   const dataManager = DataManager.getInstance();
@@ -93,6 +95,23 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
     setEditingParticipants([...(record.participants || [])]);
     setEditingNonParticipants([...(record.non_participants || [])]);
     setIsDetailModalVisible(true);
+  };
+
+  // Handle edit record - load to local data and enter edit mode
+  const handleEditRecord = (record: GVGInfo) => {
+    // Load record to imported data
+    setImportedData([record]);
+    // Enter edit mode
+    setEditingLocalDataText(JSON.stringify([record], null, 2));
+    setIsEditingLocalData(true);
+    // Scroll to local data section
+    setTimeout(() => {
+      const localDataElement = document.querySelector('[data-testid="gvg-local-data-card"]');
+      if (localDataElement) {
+        localDataElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+    message.success('Record loaded to edit area');
   };
 
 
@@ -400,6 +419,65 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
     setImageViewerVisible(true);
   };
 
+  // Start editing local data
+  const handleStartEditLocalData = () => {
+    setEditingLocalDataText(JSON.stringify(importedData, null, 2));
+    setIsEditingLocalData(true);
+  };
+
+  // Save edited local data
+  const handleSaveLocalData = async () => {
+    try {
+      const parsedData = JSON.parse(editingLocalDataText);
+      const dataArray = Array.isArray(parsedData) ? parsedData : [parsedData];
+      setImportedData(dataArray);
+      setIsEditingLocalData(false);
+      message.success(t('gvg.localDataUpdated'));
+      
+      // Auto save to server with the new data
+      if (dataArray.length > 0) {
+        message.info('Auto-saving to server...');
+        try {
+          setLoading(true);
+          // Use the parsed data directly instead of waiting for state update
+          await saveGVGDataArrayToServer(dataArray);
+        } catch (error) {
+          console.error('Auto save to server failed:', error);
+          message.warning('Local data updated, but auto-save to server failed. Please manually click "Save to Server"');
+        } finally {
+          setLoading(false);
+        }
+      }
+    } catch (error) {
+      message.error(t('gvg.jsonFormatError'));
+      console.error('Invalid JSON format:', error);
+    }
+  };
+
+  // Helper function to save GVG data array to server
+  const saveGVGDataArrayToServer = async (gvgData: any[]) => {
+    console.log('Preparing to save GVG data:', gvgData);
+    const response = await gvgApi.importData(gvgData);
+    console.log('Server response:', response.data);
+    
+    if (response.data.success) {
+      message.success(response.data.message || 'Successfully saved to server');
+      // Clear imported data since it's now saved to server
+      setImportedData([]);
+      // Refresh cached data
+      await globalGVGManager.refreshData();
+    } else {
+      console.error('Save failed, server response:', response.data);
+      throw new Error(response.data.error || response.data.message || 'Save failed');
+    }
+  };
+
+  // Cancel editing local data
+  const handleCancelEditLocalData = () => {
+    setIsEditingLocalData(false);
+    setEditingLocalDataText('');
+  };
+
   // Export data
   const handleExportData = () => {
     if (importedData.length === 0) {
@@ -523,17 +601,58 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
       <div style={{ flex: 1, overflow: 'auto' }}>
         {/* Local imported data */}
         {importedData.length > 0 && (
-          <Card title={t('gvg.localData')} style={{ marginBottom: 16 }}>
-            <pre style={{ 
-              maxHeight: '200px', 
-              overflow: 'auto', 
-              backgroundColor: '#f5f5f5', 
-              padding: '12px',
-              borderRadius: '4px',
-              fontSize: '12px'
-            }}>
-              {JSON.stringify(importedData, null, 2)}
-            </pre>
+          <Card 
+            data-testid="gvg-local-data-card"
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>{t('gvg.localData')}</span>
+                <Space>
+                  {!isEditingLocalData ? (
+                    <Button 
+                      size="small" 
+                      onClick={handleStartEditLocalData}
+                      style={{ backgroundColor: '#1890ff', color: 'white', borderColor: '#1890ff' }}
+                    >
+                      {t('common.edit')}
+                    </Button>
+                  ) : (
+                    <>
+                      <Button size="small" onClick={handleSaveLocalData} type="primary">
+                        {t('common.save')}
+                      </Button>
+                      <Button size="small" onClick={handleCancelEditLocalData}>
+                        {t('common.cancel')}
+                      </Button>
+                    </>
+                  )}
+                </Space>
+              </div>
+            } 
+            style={{ marginBottom: 16 }}
+          >
+            {!isEditingLocalData ? (
+              <pre style={{ 
+                maxHeight: '200px', 
+                overflow: 'auto', 
+                backgroundColor: '#f5f5f5', 
+                padding: '12px',
+                borderRadius: '4px',
+                fontSize: '12px'
+              }}>
+                {JSON.stringify(importedData, null, 2)}
+              </pre>
+            ) : (
+              <TextArea
+                value={editingLocalDataText}
+                onChange={(e) => setEditingLocalDataText(e.target.value)}
+                rows={10}
+                style={{ 
+                  fontFamily: 'monospace',
+                  fontSize: '12px'
+                }}
+                placeholder={t('gvg.pasteJsonData')}
+              />
+            )}
           </Card>
         )}
 
@@ -610,10 +729,7 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
                       {user?.role !== 'viewer' && (
                         <Button
                           size="small"
-                          onClick={() => {
-                            setImportedData([record]);
-                            message.success(t('gvg.loadedToEdit'));
-                          }}
+                          onClick={() => handleEditRecord(record)}
                         >
                           {t('gvg.edit')}
                         </Button>

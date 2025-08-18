@@ -56,8 +56,33 @@ const upload = multer({
 });
 
 // Configure multer for zip uploads
+const zipStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    let tempPath: string;
+    
+    if (process.env.NODE_ENV === 'production') {
+      // Production: Use client/public/temp
+      tempPath = path.join(process.cwd(), 'client/public/temp');
+    } else {
+      // Development: Use client/public/temp directly
+      tempPath = path.join(__dirname, '../../../client/public/temp');
+    }
+    
+    // Ensure directory exists
+    if (!fs.existsSync(tempPath)) {
+      fs.mkdirSync(tempPath, { recursive: true });
+    }
+    cb(null, tempPath);
+  },
+  filename: (req, file, cb) => {
+    // Generate unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `images-${uniqueSuffix}.zip`);
+  }
+});
+
 const zipUpload = multer({
-  dest: 'uploads/temp/', // Temporary storage for zip files
+  storage: zipStorage,
   limits: {
     fileSize: 100 * 1024 * 1024 // 100MB limit for zip files
   },

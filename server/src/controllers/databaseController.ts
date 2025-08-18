@@ -943,7 +943,15 @@ export class DatabaseController {
         imagesDir = path.join(__dirname, '../../../client/public/images', dataUserId);
       }
       
-      const tempDir = path.join(process.cwd(), 'uploads', 'temp', dataUserId);
+      let tempDir: string;
+      
+      if (process.env.NODE_ENV === 'production') {
+        // Production: Use client/public/temp
+        tempDir = path.join(process.cwd(), 'client/public/temp', dataUserId);
+      } else {
+        // Development: Use client/public/temp directly
+        tempDir = path.join(__dirname, '../../../client/public/temp', dataUserId);
+      }
       
       try {
         // Remove existing images directory

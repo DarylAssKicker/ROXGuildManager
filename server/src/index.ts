@@ -48,6 +48,8 @@ app.use(express.json({ limit: '10mb' })); // JSON parsing
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static file service - provide access to uploaded images
+// Both development and production use client/public/images
+// In production, Docker maps ./uploads/images to /app/client/public/images
 app.use('/images', express.static(path.join(__dirname, '../../client/public/images')));
 
 // Health check endpoint

@@ -250,16 +250,19 @@ class AAController {
         });
       }
 
-      // Determine image directory path based on environment
+      // Get user ID for data access
+      const userId = getDataUserId(req);
+      
+      // Determine image directory path based on environment, include userId
       let imagePath: string;
       if (process.env.UPLOAD_PATH) {
-        imagePath = path.join(process.env.UPLOAD_PATH, 'AA', date);
+        imagePath = path.join(process.env.UPLOAD_PATH, userId, 'AA', date);
       } else if (process.env.NODE_ENV === 'production') {
-        // Production environment: use client directory under working directory
-        imagePath = path.join(process.cwd(), 'client/public/images/AA', date);
+        // Production: Docker maps uploads to client/public/images
+        imagePath = path.join(process.cwd(), 'client/public/images', userId, 'AA', date);
       } else {
-        // Development environment: use path relative to source code
-        imagePath = path.join(__dirname, '../../../client/public/images/AA', date);
+        // Development: Use client/public/images directly
+        imagePath = path.join(__dirname, '../../../client/public/images', userId, 'AA', date);
       }
       
       const imageDir = imagePath;
@@ -285,7 +288,7 @@ class AAController {
 
         const images = imageFiles.map(file => ({
           filename: file,
-          path: `/images/AA/${date}/${file}`,
+          path: `/images/${userId}/AA/${date}/${file}`,
           size: fs.statSync(path.join(imageDir, file)).size,
           created: fs.statSync(path.join(imageDir, file)).birthtime
         }));
@@ -524,15 +527,20 @@ class AAController {
       // Decode filename in case it was URL encoded
       const decodedFilename = decodeURIComponent(filename);
 
-      // Determine image path based on environment
+      // Get user ID for data access
+      const userId = getDataUserId(req);
+      
+      // Determine image path based on environment, include userId
       let imagePath: string;
       
       if (process.env.UPLOAD_PATH) {
-        imagePath = path.join(process.env.UPLOAD_PATH, 'AA', date, decodedFilename);
+        imagePath = path.join(process.env.UPLOAD_PATH, userId, 'AA', date, decodedFilename);
       } else if (process.env.NODE_ENV === 'production') {
-        imagePath = path.join(process.cwd(), 'client/public/images/AA', date, decodedFilename);
+        // Production: Docker maps uploads to client/public/images
+        imagePath = path.join(process.cwd(), 'client/public/images', userId, 'AA', date, decodedFilename);
       } else {
-        imagePath = path.join(__dirname, '../../../client/public/images/AA', date, decodedFilename);
+        // Development: Use client/public/images directly
+        imagePath = path.join(__dirname, '../../../client/public/images', userId, 'AA', date, decodedFilename);
       }
 
       // Check if file exists

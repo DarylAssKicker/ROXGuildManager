@@ -547,11 +547,23 @@ export class DatabaseController {
         return;
       }
 
+      // Process backgroundImage to include userid in path if it's just a filename
+      let processedBackgroundImage = '';
+      if (backgroundImage) {
+        if (backgroundImage.startsWith('/images/')) {
+          // Already has full path, use as is
+          processedBackgroundImage = backgroundImage;
+        } else {
+          // Just a filename, add the userid path
+          processedBackgroundImage = `/images/${dataUserId}/${backgroundImage}`;
+        }
+      }
+
       const guildNameResource: GuildNameResource = {
         guildId: dataUserId,
         guildName,
         description: description || '',
-        backgroundImage: backgroundImage || '',
+        backgroundImage: processedBackgroundImage,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -595,6 +607,15 @@ export class DatabaseController {
       }
       
       const dataUserId = getDataUserId(req);
+      
+      // Process backgroundImage to include userid in path if it's just a filename
+      if (updateData.backgroundImage !== undefined) {
+        if (updateData.backgroundImage && !updateData.backgroundImage.startsWith('/images/')) {
+          // Just a filename, add the userid path
+          updateData.backgroundImage = `/images/${dataUserId}/${updateData.backgroundImage}`;
+        }
+      }
+      
       const success = await databaseService.updateGuildNameResource(dataUserId, updateData);
       
       if (success) {
@@ -686,7 +707,7 @@ export class DatabaseController {
         success: true,
         data: {
           filename,
-          url: `/images/${filename}`
+          url: `/images/${dataUserId}/${filename}`
         },
         message: 'Background image uploaded successfully'
       });

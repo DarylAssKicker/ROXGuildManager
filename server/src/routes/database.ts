@@ -7,17 +7,23 @@ import fs from 'fs';
 // Configure multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Support environment variable configuration for upload path
+    // Get user ID from authenticated user
+    if (!req.user?.id) {
+      cb(new Error('User authentication required'), '');
+      return;
+    }
+    
+    const userId = req.user.id;
     let uploadPath: string;
     
     if (process.env.UPLOAD_PATH) {
-      uploadPath = process.env.UPLOAD_PATH;
+      uploadPath = path.join(process.env.UPLOAD_PATH, userId, 'guild');
     } else if (process.env.NODE_ENV === 'production') {
-      // Production environment: use client directory under working directory
-      uploadPath = path.join(process.cwd(), 'client/public/images');
+      // Production: Docker maps uploads to client/public/images
+      uploadPath = path.join(process.cwd(), 'client/public/images', userId, 'guild');
     } else {
-      // Development environment: use path relative to source code
-      uploadPath = path.join(__dirname, '../../../client/public/images');
+      // Development: Use client/public/images directly
+      uploadPath = path.join(__dirname, '../../../client/public/images', userId, 'guild');
     }
     
     // Ensure directory exists

@@ -15,14 +15,23 @@ const storage = multer.diskStorage({
       return;
     }
     
+    // Get user ID from authenticated user
+    if (!req.user?.id) {
+      cb(new Error('User authentication required'), '');
+      return;
+    }
+    
+    const userId = req.user.id;
     let uploadPath: string;
     
     if (process.env.UPLOAD_PATH) {
-      uploadPath = path.join(process.env.UPLOAD_PATH, 'AA', date);
+      uploadPath = path.join(process.env.UPLOAD_PATH, userId, 'AA', date);
     } else if (process.env.NODE_ENV === 'production') {
-      uploadPath = path.join(process.cwd(), 'client/public/images/AA', date);
+      // Production: Docker maps uploads to client/public/images
+      uploadPath = path.join(process.cwd(), 'client/public/images', userId, 'AA', date);
     } else {
-      uploadPath = path.join(__dirname, '../../../client/public/images/AA', date);
+      // Development: Use client/public/images directly
+      uploadPath = path.join(__dirname, '../../../client/public/images', userId, 'AA', date);
     }
     
     // Ensure directory exists

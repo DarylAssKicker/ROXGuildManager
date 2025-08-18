@@ -51,19 +51,19 @@ export class ScreenshotController {
   }
 
   // Save AA images to specified path
-  async saveAAImages(imagesToProcess: Express.Multer.File[], aaDate: string): Promise<string[]> {
+  async saveAAImages(imagesToProcess: Express.Multer.File[], aaDate: string, userId: string): Promise<string[]> {
     const savedPaths: string[] = [];
     
-    // Determine save path based on environment
+    // Determine save path based on environment, include userId in path
     let uploadPath: string;
     if (process.env.UPLOAD_PATH) {
-      uploadPath = path.join(process.env.UPLOAD_PATH, 'AA', aaDate);
+      uploadPath = path.join(process.env.UPLOAD_PATH, userId, 'AA', aaDate);
     } else if (process.env.NODE_ENV === 'production') {
-      // Production environment: use client directory under working directory
-      uploadPath = path.join(process.cwd(), 'client/public/images/AA', aaDate);
+      // Production: Docker maps uploads to client/public/images
+      uploadPath = path.join(process.cwd(), 'client/public/images', userId, 'AA', aaDate);
     } else {
-      // Development environment: use path relative to source code
-      uploadPath = path.join(__dirname, '../../../client/public/images/AA', aaDate);
+      // Development: Use client/public/images directly
+      uploadPath = path.join(__dirname, '../../../client/public/images', userId, 'AA', aaDate);
     }
     
     const baseDir = uploadPath;
@@ -102,19 +102,19 @@ export class ScreenshotController {
   }
 
   // Save GVG images to specified path
-  async saveGVGImages(imagesToProcess: Express.Multer.File[], gvgDate: string): Promise<string[]> {
+  async saveGVGImages(imagesToProcess: Express.Multer.File[], gvgDate: string, userId: string): Promise<string[]> {
     const savedPaths: string[] = [];
     
-    // Determine save path based on environment
+    // Determine save path based on environment, include userId in path
     let uploadPath: string;
     if (process.env.UPLOAD_PATH) {
-      uploadPath = path.join(process.env.UPLOAD_PATH, 'GVG', gvgDate);
+      uploadPath = path.join(process.env.UPLOAD_PATH, userId, 'GVG', gvgDate);
     } else if (process.env.NODE_ENV === 'production') {
-      // Production environment: use client directory under working directory
-      uploadPath = path.join(process.cwd(), 'client/public/images/GVG', gvgDate);
+      // Production: Docker maps uploads to client/public/images
+      uploadPath = path.join(process.cwd(), 'client/public/images', userId, 'GVG', gvgDate);
     } else {
-      // Development environment: use path relative to source code
-      uploadPath = path.join(__dirname, '../../../client/public/images/GVG', gvgDate);
+      // Development: Use client/public/images directly
+      uploadPath = path.join(__dirname, '../../../client/public/images', userId, 'GVG', gvgDate);
     }
     
     const baseDir = uploadPath;
@@ -194,19 +194,19 @@ export class ScreenshotController {
   }
 
   // Save KVM images to specified path
-  async saveKVMImages(imagesToProcess: Express.Multer.File[], kvmDate: string): Promise<string[]> {
+  async saveKVMImages(imagesToProcess: Express.Multer.File[], kvmDate: string, userId: string): Promise<string[]> {
     const savedPaths: string[] = [];
     
-    // Determine save path based on environment
+    // Determine save path based on environment, include userId in path
     let uploadPath: string;
     if (process.env.UPLOAD_PATH) {
-      uploadPath = path.join(process.env.UPLOAD_PATH, 'KVM', kvmDate);
+      uploadPath = path.join(process.env.UPLOAD_PATH, userId, 'KVM', kvmDate);
     } else if (process.env.NODE_ENV === 'production') {
-      // Production environment: use client directory under working directory
-      uploadPath = path.join(process.cwd(), 'client/public/images/KVM', kvmDate);
+      // Production: Docker maps uploads to client/public/images
+      uploadPath = path.join(process.cwd(), 'client/public/images', userId, 'KVM', kvmDate);
     } else {
-      // Development environment: use path relative to source code
-      uploadPath = path.join(__dirname, '../../../client/public/images/KVM', kvmDate);
+      // Development: Use client/public/images directly
+      uploadPath = path.join(__dirname, '../../../client/public/images', userId, 'KVM', kvmDate);
     }
     
     const baseDir = uploadPath;
@@ -346,17 +346,27 @@ export class ScreenshotController {
 
       console.log(`// If AA, GVG or KVM module, save images first (use current date as default)`);
 
+      // Get user ID from authenticated user
+      const userId = req.user?.id;
+      if (!userId) {
+        const response: ApiResponse<null> = {
+          success: false,
+          error: 'User authentication required',
+        };
+        res.status(401).json(response);
+        return;
+      }
       
       let imageDate: string = new Date().toISOString().split('T')[0] || new Date().toLocaleDateString();
       if (module === 'aa' && imagesToProcess.length > 0) {
-        savedImagePaths = await this.saveAAImages(imagesToProcess, imageDate);
-        console.log(`Saved ${savedImagePaths.length} AA images to temporary directory: ${imageDate}`);
+        savedImagePaths = await this.saveAAImages(imagesToProcess, imageDate, userId);
+        console.log(`Saved ${savedImagePaths.length} AA images to user directory: ${userId}/AA/${imageDate}`);
       } else if (module === 'gvg' && imagesToProcess.length > 0) {
-        savedImagePaths = await this.saveGVGImages(imagesToProcess, imageDate);
-        console.log(`Saved ${savedImagePaths.length} GVG images to temporary directory: ${imageDate}`);
+        savedImagePaths = await this.saveGVGImages(imagesToProcess, imageDate, userId);
+        console.log(`Saved ${savedImagePaths.length} GVG images to user directory: ${userId}/GVG/${imageDate}`);
       } else if (module === 'kvm' && imagesToProcess.length > 0) {
-        savedImagePaths = await this.saveKVMImages(imagesToProcess, imageDate);
-        console.log(`Saved ${savedImagePaths.length} KVM images to temporary directory: ${imageDate}`);
+        savedImagePaths = await this.saveKVMImages(imagesToProcess, imageDate, userId);
+        console.log(`Saved ${savedImagePaths.length} KVM images to user directory: ${userId}/KVM/${imageDate}`);
       }
 
       // Process each image - only do OCR recognition first, don't apply template

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { 
   Card, 
   Button, 
@@ -46,7 +46,7 @@ import groupPartyApi, {
   RemoveMemberFromPartyRequest,
   SwapMembersRequest
 } from '../../services/groupPartyApi';
-import { classesApi } from '../../services/api';
+import { globalClassesManager } from '../../services/GlobalClassesManager';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -509,18 +509,13 @@ const GroupPartyManager: React.FC = () => {
   // Form instance
   const [partyForm] = Form.useForm();
 
-  // Load class configuration
-  const loadClasses = async () => {
-    try {
-      const response = await classesApi.getAll();
-      setClasses(response.data.data || []);
-    } catch (error) {
-      console.error('Failed to load class configuration:', error);
-    }
-  };
-
-  // Load data
+  // Load data 
   const loadData = async () => {
+    if (loading) {
+      console.log('🔄 loadData already in progress, skipping');
+      return;
+    }
+    
     setLoading(true);
     try {
       const partyType = getPartyTypeFromTab(activeTab);
@@ -573,10 +568,32 @@ const GroupPartyManager: React.FC = () => {
     }
   };
 
+  // Load classes from cache when component mounts
   useEffect(() => {
-    loadData();
-    loadClasses();
-  }, [members, activeTab]);
+    // Get classes from cache (will auto-load if not cached)
+    globalClassesManager.getClasses().then(classesData => {
+      setClasses(classesData);
+    });
+
+    // Also set up a listener for future updates
+    const handleClassesUpdate = (classesData: typeof classes) => {
+      setClasses(classesData);
+    };
+    
+    globalClassesManager.addListener(handleClassesUpdate);
+    
+    // Cleanup listener on unmount
+    return () => {
+      globalClassesManager.removeListener(handleClassesUpdate);
+    };
+  }, []);
+
+  // Load data when activeTab changes or members are available
+  useEffect(() => {
+    if (members.length > 0) {
+      loadData();
+    }
+  }, [members.length, activeTab]); // Use members.length instead of members array
 
   // Get all class options
   const classOptions = useMemo(() => {

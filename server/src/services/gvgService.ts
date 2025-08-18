@@ -125,11 +125,14 @@ class GVGService {
    */
   async getGVGDataByDateRange(userId: string, startDate: string, endDate: string): Promise<ApiResponse<GVGInfo[]>> {
     try {
-      const startTimestamp = new Date(startDate).getTime();
-      const endTimestamp = new Date(endDate).getTime();
+      // Fix date order - ensure startDate is earlier than endDate
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const minTimestamp = Math.min(start.getTime(), end.getTime());
+      const maxTimestamp = Math.max(start.getTime(), end.getTime());
       
-      // Get all dates within date range
-      const dates = await this.redis.zrangebyscore(`rox_guild:user:${userId}:gvg:dates`, startTimestamp, endTimestamp);
+      // Get all dates within date range (corrected range)
+      const dates = await this.redis.zrangebyscore(`rox_guild:user:${userId}:gvg:dates`, minTimestamp, maxTimestamp);
       
       if (dates.length === 0) {
         return {
@@ -151,7 +154,7 @@ class GVGService {
 
       return {
         success: true,
-        data: gvgDataList.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        data: gvgDataList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // Sort by newest first
       };
     } catch (error) {
       console.error('Failed to get GVG data range:', error);

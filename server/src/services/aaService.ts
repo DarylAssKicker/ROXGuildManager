@@ -142,14 +142,17 @@ class AAService {
    */
   async getAADataByDateRange(requestUserId: string, startDate: string, endDate: string): Promise<ApiResponse<AAInfo[]>> {
     try {
-      const startTimestamp = new Date(startDate).getTime();
-      const endTimestamp = new Date(endDate).getTime();
+      // Fix date order - ensure startDate is earlier than endDate
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const minTimestamp = Math.min(start.getTime(), end.getTime());
+      const maxTimestamp = Math.max(start.getTime(), end.getTime());
       
       // Get actual data storage user ID
       const dataUserId = await this.getDataUserId(requestUserId);
       
-      // Get all dates within user's date range
-      const dates = await this.redis.zrangebyscore(`rox_guild:user:${dataUserId}:aa:dates`, startTimestamp, endTimestamp);
+      // Get all dates within user's date range (corrected range)
+      const dates = await this.redis.zrangebyscore(`rox_guild:user:${dataUserId}:aa:dates`, minTimestamp, maxTimestamp);
       
       if (dates.length === 0) {
         return {
@@ -171,7 +174,7 @@ class AAService {
 
       return {
         success: true,
-        data: aaDataList.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        data: aaDataList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // Sort by newest first
       };
     } catch (error) {
       console.error('Failed to get AA data range:', error);

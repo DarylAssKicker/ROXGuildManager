@@ -8,11 +8,12 @@ import { gvgApi, guildMembersApi } from '../services/api';
 import { GVGInfo } from '../types';
 import dayjs from 'dayjs';
 import DataManager from '../services/DataManager';
+import globalClassesManager from '../services/GlobalClassesManager';
+import globalGVGManager from '../services/GlobalGVGManager';
 import { useTranslation } from '../hooks/useTranslation';
 import { usePermissions } from '../hooks/usePermissions';
 import { useAuth } from '../contexts/AuthContext';
 import { getClassColor } from '../utils/classColors';
-import { classesApi } from '../services/api';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -43,16 +44,6 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
   
   // Get DataManager instance
   const dataManager = DataManager.getInstance();
-
-  // Load class configuration
-  const loadClasses = async () => {
-    try {
-      const response = await classesApi.getAll();
-      setClasses(response.data.data || []);
-    } catch (error) {
-      console.error('Failed to load class configuration:', error);
-    }
-  };
 
   // Load guild member data
   const loadGuildMembers = async () => {
@@ -129,8 +120,8 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
         
         if (response.data.success) {
           message.success('GVG data auto-saved successfully');
-          // Reload server data
-          await loadServerData();
+          // Refresh cached data
+          await globalGVGManager.refreshData();
           // Update selectedRecord to reflect latest data
           setSelectedRecord(updatedGVGData);
         } else {
@@ -215,50 +206,31 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
 
 
 
-  // Load server data
-  const loadServerData = async () => {
+  // Load server data using global cache manager
+  const loadServerData = async (force = false) => {
     try {
       setLoading(true);
-      const response = await gvgApi.getAllDates();
-      if (response.data.success) {
-        const dates = response.data.data;
-        const allData: GVGInfo[] = [];
-        
-        for (const date of dates) {
-          const dataResponse = await gvgApi.getByDate(date);
-          if (dataResponse.data.success) {
-            allData.push(dataResponse.data.data);
-          }
-        }
-        
-        // Sort by date in descending order (newest first)
-        allData.sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf());
-        
-        setServerData(allData);
+      
+      let gvgDataState;
+      if (force) {
+        gvgDataState = await globalGVGManager.reloadData();
       } else {
-        // Server returned failure, but might just be no data
-        console.log('Server has no GVG data:', response.data.message);
-        setServerData([]);
+        gvgDataState = await globalGVGManager.getData();
       }
       
-      // Load statistics
-      try {
-        const statsResponse = await gvgApi.getStatistics();
-        if (statsResponse.data.success) {
-          setStatistics(statsResponse.data.data);
-        }
-      } catch (statsError) {
-        // Statistics loading failure doesn't affect main functionality
-        console.log('Statistics temporarily unavailable');
-      }
+      setServerData(gvgDataState.serverData);
+      setStatistics(gvgDataState.statistics);
     } catch (error: any) {
       // Check if it's 404 or 503 error (service endpoint doesn't exist)
       if (error.response?.status === 404 || error.response?.status === 503) {
         console.log('GVG service endpoint not yet implemented, this is normal');
         setServerData([]);
+        setStatistics(null);
       } else {
         message.error(t('gvg.loadServerDataError'));
         console.error('Failed to load server data:', error);
+        setServerData([]);
+        setStatistics(null);
       }
     } finally {
       setLoading(false);
@@ -286,11 +258,45 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
     };
   }, [dataManager, selectedRecord, editingParticipants, editingNonParticipants]);
 
+  // Load and listen to classes changes
+  useEffect(() => {
+    const handleClassesChange = (newClasses: any[]) => {
+      setClasses(newClasses);
+    };
+
+    // Add listener for classes changes
+    globalClassesManager.addListener(handleClassesChange);
+    
+    // Load classes (will use cache if already loaded)
+    globalClassesManager.getClasses().catch(error => {
+      console.error('Failed to load classes:', error);
+    });
+
+    return () => {
+      globalClassesManager.removeListener(handleClassesChange);
+    };
+  }, []);
+
+  // Listen to GVG data changes from global manager
+  useEffect(() => {
+    const handleGVGDataChange = (gvgState: any) => {
+      setServerData(gvgState.serverData);
+      setStatistics(gvgState.statistics);
+      setLoading(false);
+    };
+
+    // Add listener for GVG data changes
+    globalGVGManager.addListener(handleGVGDataChange);
+    
+    return () => {
+      globalGVGManager.removeListener(handleGVGDataChange);
+    };
+  }, []);
+
   // Load data when component loads
   useEffect(() => {
     loadServerData();
     loadGuildMembers();
-    loadClasses();
   }, []);
 
   // Handle file upload
@@ -350,8 +356,8 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
       if (response.data.success) {
         message.success(response.data.message || t('gvg.saveSuccess'));
         setImportedData([]);
-        // Reload server data
-        await loadServerData();
+        // Refresh cached data
+        await globalGVGManager.refreshData();
       } else {
         console.error('Save failed, server response:', response.data);
         message.error(response.data.error || response.data.message || t('gvg.saveError'));
@@ -371,8 +377,8 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
       
       if (response.data.success) {
         message.success(response.data.message || t('gvg.deleteSuccess'));
-        // Reload server data
-        await loadServerData();
+        // Refresh cached data
+        await globalGVGManager.refreshData();
       } else {
         message.error(response.data.message || t('gvg.deleteError'));
       }
@@ -463,7 +469,7 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
           )}
           <Button
             icon={<ReloadOutlined />}
-            onClick={loadServerData}
+            onClick={() => loadServerData(true)}
             loading={loading}
           >
             {t('gvg.refreshData')}
@@ -537,7 +543,7 @@ const GVGManager: React.FC<GVGManagerProps> = () => {
             <Table
               dataSource={serverData}
               rowKey="date"
-              pagination={{ pageSize: 10 }}
+              pagination={{ pageSize: 5 }}
               loading={loading}
               columns={[
                 {

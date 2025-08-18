@@ -4,10 +4,12 @@ import { UploadOutlined, FileTextOutlined, CameraOutlined, ImportOutlined, Delet
 import { RcFile } from 'antd/es/upload';
 import EnhancedImageRecognition from './EnhancedImageRecognition';
 import AAImageViewer from './AAImageViewer';
-import { aaApi, guildMembersApi, classesApi } from '../services/api';
+import { aaApi, guildMembersApi } from '../services/api';
 import { AAInfo } from '../types';
 import dayjs from 'dayjs';
 import DataManager from '../services/DataManager';
+import globalClassesManager from '../services/GlobalClassesManager';
+import globalAAManager from '../services/GlobalAAManager';
 import { useTranslation } from '../hooks/useTranslation';
 import { usePermissions } from '../hooks/usePermissions';
 
@@ -127,8 +129,8 @@ const AAManager: React.FC<AAManagerProps> = () => {
           message.success('AA data auto saved');
           // Update selectedRecord to reflect latest data
           setSelectedRecord(updatedAAData);
-          // Reload server data
-          await loadServerData();
+          // Refresh cached data
+          await globalAAManager.refreshData();
         } else {
           message.error(importResponse.data.error || 'Auto save failed');
         }
@@ -203,36 +205,25 @@ const AAManager: React.FC<AAManagerProps> = () => {
     });
   };
 
-  // Load server data
-  const loadServerData = async () => {
+  // Load server data using global cache manager
+  const loadServerData = async (force = false) => {
     try {
       setLoading(true);
-      const response = await aaApi.getAllDates();
-      if (response.data.success) {
-        const dates = response.data.data;
-        const allData: AAInfo[] = [];
-        
-        for (const date of dates) {
-          const dataResponse = await aaApi.getByDate(date);
-          if (dataResponse.data.success) {
-            allData.push(dataResponse.data.data);
-          }
-        }
-        
-        // Sort by date in descending order (newest first)
-        allData.sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf());
-        
-        setServerData(allData);
+      
+      let aaDataState;
+      if (force) {
+        aaDataState = await globalAAManager.reloadData();
+      } else {
+        aaDataState = await globalAAManager.getData();
       }
       
-      // Load statistics
-      const statsResponse = await aaApi.getStatistics();
-      if (statsResponse.data.success) {
-        setStatistics(statsResponse.data.data);
-      }
+      setServerData(aaDataState.serverData);
+      setStatistics(aaDataState.statistics);
     } catch (error) {
       message.error(t('aa.loadServerDataError'));
       console.error('Failed to load server data:', error);
+      setServerData([]);
+      setStatistics(null);
     } finally {
       setLoading(false);
     }
@@ -258,16 +249,6 @@ const AAManager: React.FC<AAManagerProps> = () => {
     };
   }, [dataManager, selectedRecord, editingParticipants]);
 
-  // Load class configuration
-  const loadClasses = async () => {
-    try {
-      const response = await classesApi.getAll();
-      setClasses(response.data.data || []);
-    } catch (error) {
-      console.error('Failed to load class configuration:', error);
-    }
-  };
-
   // Get color by class name
   const getClassColor = (className: string) => {
     const classInfo = classes.find(c => c.name === className);
@@ -276,11 +257,45 @@ const AAManager: React.FC<AAManagerProps> = () => {
     return color + '40'; // Add transparency
   };
 
+  // Load and listen to classes changes
+  useEffect(() => {
+    const handleClassesChange = (newClasses: any[]) => {
+      setClasses(newClasses);
+    };
+
+    // Add listener for classes changes
+    globalClassesManager.addListener(handleClassesChange);
+    
+    // Load classes (will use cache if already loaded)
+    globalClassesManager.getClasses().catch(error => {
+      console.error('Failed to load classes:', error);
+    });
+
+    return () => {
+      globalClassesManager.removeListener(handleClassesChange);
+    };
+  }, []);
+
+  // Listen to AA data changes from global manager
+  useEffect(() => {
+    const handleAADataChange = (aaState: any) => {
+      setServerData(aaState.serverData);
+      setStatistics(aaState.statistics);
+      setLoading(false);
+    };
+
+    // Add listener for AA data changes
+    globalAAManager.addListener(handleAADataChange);
+    
+    return () => {
+      globalAAManager.removeListener(handleAADataChange);
+    };
+  }, []);
+
   // Get data when component loads
   useEffect(() => {
     loadServerData();
     loadGuildMembers();
-    loadClasses();
   }, []);
 
   // Handle file upload
@@ -402,8 +417,8 @@ const AAManager: React.FC<AAManagerProps> = () => {
       if (response.data.success) {
         message.success(response.data.message || t('aa.saveSuccess'));
         setImportedData([]);
-        // Reload server data
-        await loadServerData();
+        // Refresh cached data
+        await globalAAManager.refreshData();
       } else {
         console.error('Save failed, server response:', response.data);
         message.error(response.data.error || response.data.message || t('aa.saveError'));
@@ -423,8 +438,8 @@ const AAManager: React.FC<AAManagerProps> = () => {
       
       if (response.data.success) {
         message.success(response.data.message || t('aa.deleteSuccess'));
-        // Reload server data
-        await loadServerData();
+        // Refresh cached data
+        await globalAAManager.refreshData();
       } else {
         message.error(response.data.message || t('aa.deleteError'));
       }
@@ -515,7 +530,7 @@ const AAManager: React.FC<AAManagerProps> = () => {
           )}
           <Button
             icon={<ReloadOutlined />}
-            onClick={loadServerData}
+            onClick={() => loadServerData(true)}
             loading={loading}
           >
             {t('aa.refreshData')}
@@ -589,7 +604,7 @@ const AAManager: React.FC<AAManagerProps> = () => {
             <Table
               dataSource={serverData}
               rowKey="date"
-              pagination={{ pageSize: 10 }}
+              pagination={{ pageSize: 5 }}
               loading={loading}
               columns={[
                 {

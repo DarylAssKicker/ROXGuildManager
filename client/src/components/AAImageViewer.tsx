@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Image, List, Card, Typography, Button, Space, message, Empty, Spin, Radio, Upload } from 'antd';
+import { Modal, Image, List, Card, Typography, Button, Space, message, Empty, Spin, Radio, Upload, Popconfirm } from 'antd';
 import { EyeOutlined, DownloadOutlined, DeleteOutlined, FolderOutlined, AppstoreAddOutlined, PictureOutlined, ColumnHeightOutlined, ColumnWidthOutlined, UploadOutlined } from '@ant-design/icons';
 import { RcFile, UploadFile } from 'antd/es/upload';
 import { aaApi } from '../services/api';
@@ -84,6 +84,24 @@ const AAImageViewer: React.FC<AAImageViewerProps> = ({ visible, onClose, date })
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Delete image
+  const handleDeleteImage = async (image: AAImage) => {
+    try {
+      const response = await aaApi.deleteImage(date, image.filename);
+      
+      if (response.data.success) {
+        message.success(`Successfully deleted image: ${image.filename}`);
+        // Remove from local state
+        setImages(prevImages => prevImages.filter(img => img.filename !== image.filename));
+      } else {
+        message.error(response.data.message || 'Failed to delete image');
+      }
+    } catch (error) {
+      console.error('Failed to delete image:', error);
+      message.error('Failed to delete image');
+    }
   };
 
   // Stitch images
@@ -431,6 +449,24 @@ const AAImageViewer: React.FC<AAImageViewerProps> = ({ visible, onClose, date })
                           onClick={() => handleDownload(image)}
                           title="Download"
                         />,
+                        ...(user?.role !== 'viewer' ? [
+                          <Popconfirm
+                            key="delete"
+                            title="Delete Image"
+                            description={`Are you sure you want to delete "${image.filename}"?`}
+                            onConfirm={() => handleDeleteImage(image)}
+                            okText="Delete"
+                            cancelText="Cancel"
+                            okType="danger"
+                          >
+                            <Button
+                              type="text"
+                              danger
+                              icon={<DeleteOutlined />}
+                              title="Delete"
+                            />
+                          </Popconfirm>
+                        ] : []),
                       ]}
                     >
                       <Card.Meta

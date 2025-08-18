@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Image, List, Card, Typography, Button, message, Empty, Spin } from 'antd';
-import { EyeOutlined, DownloadOutlined, FolderOutlined, AppstoreAddOutlined, PictureOutlined } from '@ant-design/icons';
+import { Modal, Image, List, Card, Typography, Button, message, Empty, Spin, Popconfirm } from 'antd';
+import { EyeOutlined, DownloadOutlined, DeleteOutlined, FolderOutlined, AppstoreAddOutlined, PictureOutlined } from '@ant-design/icons';
 import { gvgApi } from '../services/api';
 import { useTranslation } from '../hooks/useTranslation';
+import { useAuth } from '../contexts/AuthContext';
 import dayjs from 'dayjs';
 
 const { Text } = Typography;
@@ -21,6 +22,7 @@ interface GVGImage {
 }
 
 const GVGImageViewer: React.FC<GVGImageViewerProps> = ({ visible, onClose, date }) => {
+  const { user } = useAuth();
   const [images, setImages] = useState<GVGImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -75,6 +77,24 @@ const GVGImageViewer: React.FC<GVGImageViewerProps> = ({ visible, onClose, date 
     link.click();
     document.body.removeChild(link);
     message.success(`Download started: ${image.filename}`);
+  };
+
+  // Delete image
+  const handleDeleteImage = async (image: GVGImage) => {
+    try {
+      const response = await gvgApi.deleteImage(date, image.filename);
+      
+      if (response.data.success) {
+        message.success(`Successfully deleted image: ${image.filename}`);
+        // Remove from local state
+        setImages(prevImages => prevImages.filter(img => img.filename !== image.filename));
+      } else {
+        message.error(response.data.message || 'Failed to delete image');
+      }
+    } catch (error) {
+      console.error('Failed to delete image:', error);
+      message.error('Failed to delete image');
+    }
   };
 
   // Stitch images
@@ -297,7 +317,26 @@ const GVGImageViewer: React.FC<GVGImageViewerProps> = ({ visible, onClose, date 
                           onClick={() => handleDownload(image)}
                         >
                           Download
-                        </Button>
+                        </Button>,
+                        ...(user?.role !== 'viewer' ? [
+                          <Popconfirm
+                            key="delete"
+                            title="Delete Image"
+                            description={`Are you sure you want to delete "${image.filename}"?`}
+                            onConfirm={() => handleDeleteImage(image)}
+                            okText="Delete"
+                            cancelText="Cancel"
+                            okType="danger"
+                          >
+                            <Button
+                              type="text"
+                              danger
+                              icon={<DeleteOutlined />}
+                            >
+                              Delete
+                            </Button>
+                          </Popconfirm>
+                        ] : [])
                       ]}
                     >
                       <Card.Meta

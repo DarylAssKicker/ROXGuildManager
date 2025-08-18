@@ -497,6 +497,74 @@ class AAController {
       });
     }
   }
+
+  /**
+   * Delete AA image by filename
+   */
+  async deleteAAImage(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          error: 'Unauthenticated user',
+          message: 'Please login first'
+        });
+      }
+
+      const { date, filename } = req.params;
+
+      if (!date || !filename) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing parameters',
+          message: 'Please provide both date and filename parameters'
+        });
+      }
+
+      // Decode filename in case it was URL encoded
+      const decodedFilename = decodeURIComponent(filename);
+
+      // Determine image path based on environment
+      let imagePath: string;
+      
+      if (process.env.UPLOAD_PATH) {
+        imagePath = path.join(process.env.UPLOAD_PATH, 'AA', date, decodedFilename);
+      } else if (process.env.NODE_ENV === 'production') {
+        imagePath = path.join(process.cwd(), 'client/public/images/AA', date, decodedFilename);
+      } else {
+        imagePath = path.join(__dirname, '../../../client/public/images/AA', date, decodedFilename);
+      }
+
+      // Check if file exists
+      if (!fs.existsSync(imagePath)) {
+        return res.status(404).json({
+          success: false,
+          error: 'Image not found',
+          message: `Image "${decodedFilename}" not found for date ${date}`
+        });
+      }
+
+      // Delete the file
+      fs.unlinkSync(imagePath);
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          date,
+          filename: decodedFilename
+        },
+        message: `Successfully deleted image: ${decodedFilename}`
+      });
+
+    } catch (error) {
+      console.error('Failed to delete AA image:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
 }
 
 export default new AAController();

@@ -145,6 +145,10 @@ export const aaApi = {
       },
     });
   },
+
+  // Delete AA image by filename
+  deleteImage: (date: string, filename: string) => 
+    apiClient.delete(`/aa/images/${date}/${encodeURIComponent(filename)}`),
 };
 
 // GVG related API
@@ -180,6 +184,10 @@ export const gvgApi = {
   // Get specific members' GVG participation
   getMembersParticipation: (memberNames: string[]) => 
     apiClient.post('/gvg/members/participation', { memberNames }),
+
+  // Delete GVG image by filename
+  deleteImage: (date: string, filename: string) => 
+    apiClient.delete(`/gvg/images/${date}/${encodeURIComponent(filename)}`),
 };
 
 // KVM related API

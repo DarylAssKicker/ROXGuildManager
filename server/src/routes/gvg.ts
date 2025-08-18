@@ -25,6 +25,9 @@ router.get('/statistics', requirePermission('gvg', 'read'), gvgController.getGVG
 // Get GVG image list for specific date
 router.get('/images/:date', requirePermission('gvg', 'read'), gvgController.getGVGImages);
 
+// Delete GVG image by filename (delete permission required)
+router.delete('/images/:date/:filename', requirePermission('gvg', 'delete'), gvgController.deleteGVGImage);
+
 // Get member's GVG participation status
 router.get('/member/:memberName/participation', requirePermission('gvg', 'read'), gvgController.getMemberGVGParticipation);
 

@@ -80,6 +80,9 @@ router.get('/images/:date', requirePermission('aa', 'read'), aaController.getAAI
 // Upload AA images for specific date (create permission required)
 router.post('/images/:date/upload', requirePermission('aa', 'create'), upload.array('images', 10), aaController.uploadAAImages);
 
+// Delete AA image by filename (delete permission required)
+router.delete('/images/:date/:filename', requirePermission('aa', 'delete'), aaController.deleteAAImage);
+
 // Get member's AA participation status (read permission required)
 router.get('/member/:memberName/participation', requirePermission('aa', 'read'), aaController.getMemberAAParticipation);
 

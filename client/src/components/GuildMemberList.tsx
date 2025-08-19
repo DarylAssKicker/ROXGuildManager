@@ -419,6 +419,7 @@ const GuildMemberList: React.FC = () => {
       key: 'sort',
       width: 100,
       sorter: (a: GuildMember, b: GuildMember) => (a.sort || 0) - (b.sort || 0),
+      defaultSortOrder: 'ascend' as const,
       render: (sort: number, record: GuildMember) => (
         <EditableSort 
           key={`editable-sort-${record.id}`}

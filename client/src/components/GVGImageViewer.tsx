@@ -27,6 +27,7 @@ const GVGImageViewer: React.FC<GVGImageViewerProps> = ({ visible, onClose, date 
   const [loading, setLoading] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [currentImage, setCurrentImage] = useState<string>('');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [stitchLoading, setStitchLoading] = useState(false);
   const [stitchedImageVisible, setStitchedImageVisible] = useState(false);
   const [stitchedImageUrl, setStitchedImageUrl] = useState<string>('');
@@ -273,7 +274,7 @@ const GVGImageViewer: React.FC<GVGImageViewerProps> = ({ visible, onClose, date 
                   xxl: 6,
                 }}
                 dataSource={images}
-                renderItem={(image) => (
+                renderItem={(image, index) => (
                   <List.Item>
                     <Card
                       hoverable
@@ -293,6 +294,7 @@ const GVGImageViewer: React.FC<GVGImageViewerProps> = ({ visible, onClose, date 
                             }}
                             onClick={() => {
                               setCurrentImage(image.path);
+                              setCurrentImageIndex(index);
                               setPreviewVisible(true);
                             }}
                           />
@@ -305,6 +307,7 @@ const GVGImageViewer: React.FC<GVGImageViewerProps> = ({ visible, onClose, date 
                           icon={<EyeOutlined />}
                           onClick={() => {
                             setCurrentImage(image.path);
+                            setCurrentImageIndex(index);
                             setPreviewVisible(true);
                           }}
                         >
@@ -378,7 +381,7 @@ const GVGImageViewer: React.FC<GVGImageViewerProps> = ({ visible, onClose, date 
         preview={{
           visible: previewVisible,
           onVisibleChange: (visible) => setPreviewVisible(visible),
-          current: 0
+          current: currentImageIndex
         }}
       >
         {images.map((image) => (

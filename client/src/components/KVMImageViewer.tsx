@@ -24,6 +24,7 @@ const KVMImageViewer: React.FC<KVMImageViewerProps> = ({ visible, onClose, date 
   const [images, setImages] = useState<KVMImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [stitchLoading, setStitchLoading] = useState(false);
   const [stitchedImageVisible, setStitchedImageVisible] = useState(false);
   const [stitchedImageUrl, setStitchedImageUrl] = useState<string>('');
@@ -252,7 +253,7 @@ const KVMImageViewer: React.FC<KVMImageViewerProps> = ({ visible, onClose, date 
                   xxl: 6,
                 }}
                 dataSource={images}
-                renderItem={(image) => (
+                renderItem={(image, index) => (
                   <List.Item>
                     <Card
                       hoverable
@@ -271,6 +272,7 @@ const KVMImageViewer: React.FC<KVMImageViewerProps> = ({ visible, onClose, date 
                               cursor: 'pointer'
                             }}
                             onClick={() => {
+                              setCurrentImageIndex(index);
                               setPreviewVisible(true);
                             }}
                           />
@@ -282,6 +284,7 @@ const KVMImageViewer: React.FC<KVMImageViewerProps> = ({ visible, onClose, date 
                           type="text"
                           icon={<EyeOutlined />}
                           onClick={() => {
+                            setCurrentImageIndex(index);
                             setPreviewVisible(true);
                           }}
                         >
@@ -336,7 +339,7 @@ const KVMImageViewer: React.FC<KVMImageViewerProps> = ({ visible, onClose, date 
         preview={{
           visible: previewVisible,
           onVisibleChange: (visible) => setPreviewVisible(visible),
-          current: 0
+          current: currentImageIndex
         }}
       >
         {images.map((image) => (

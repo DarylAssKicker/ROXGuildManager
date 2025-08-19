@@ -2,6 +2,10 @@
 
 A guild management web application based on React and Node.js, supporting screenshot recognition and guild member management.
 
+![main](screenshots/screenshot-20250819-195808.png)
+![party](screenshots/screenshot-20250819-195856.png)
+
+
 ## Features
 
 ### 🎯 Core Functions

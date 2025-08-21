@@ -367,81 +367,8 @@ const AAManager: React.FC<AAManagerProps> = () => {
 
     try {
       setLoading(true);
-      console.log('Preparing to save AA data:', importedData);
-      
-      // Process each AA data, check if append is needed
-      const processedData = [];
-      for (const aaData of importedData) {
-        const isTodayDate = aaData.date === new Date().toISOString().split('T')[0];
-        
-        if (isTodayDate) {
-          try {
-            // Check if same date data exists
-            const existingResponse = await aaApi.getByDate(aaData.date);
-            if (existingResponse.data.success) {
-              // Same date data exists, append and deduplicate
-              const existingParticipants = existingResponse.data.data.participants || [];
-              const newParticipants = aaData.participants || [];
-              const combinedParticipants = [...existingParticipants, ...newParticipants];
-              const deduplicatedParticipants = deduplicateParticipants(combinedParticipants);
-              
-              console.log(`Found today's same date data, deduplicated after append: ${existingParticipants.length} + ${newParticipants.length} = ${deduplicatedParticipants.length}`);
-              message.info(t('aa.mergedWithExistingData', { 
-                existing: existingParticipants.length, 
-                new: newParticipants.length, 
-                final: deduplicatedParticipants.length 
-              }));
-              
-              // Delete original data first
-              await aaApi.deleteByDate(aaData.date);
-              
-              // Build merged data
-              processedData.push({
-                ...aaData,
-                participants: deduplicatedParticipants,
-                total_participants: deduplicatedParticipants.length
-              });
-            } else {
-              // No same date data exists, use new data directly (still need deduplication)
-              const deduplicatedParticipants = deduplicateParticipants(aaData.participants || []);
-              processedData.push({
-                ...aaData,
-                participants: deduplicatedParticipants,
-                total_participants: deduplicatedParticipants.length
-              });
-            }
-          } catch (error) {
-            console.log('Same date data does not exist, using new data');
-            const deduplicatedParticipants = deduplicateParticipants(aaData.participants || []);
-            processedData.push({
-              ...aaData,
-              participants: deduplicatedParticipants,
-              total_participants: deduplicatedParticipants.length
-            });
-          }
-        } else {
-          // Non-today data, overwrite directly (but still need deduplication)
-          const deduplicatedParticipants = deduplicateParticipants(aaData.participants || []);
-          processedData.push({
-            ...aaData,
-            participants: deduplicatedParticipants,
-            total_participants: deduplicatedParticipants.length
-          });
-        }
-      }
-      
-      const response = await aaApi.importData(processedData);
-      console.log('Server response:', response.data);
-      
-      if (response.data.success) {
-        message.success(response.data.message || t('aa.saveSuccess'));
-        setImportedData([]);
-        // Refresh cached data
-        await globalAAManager.refreshData();
-      } else {
-        console.error('Save failed, server response:', response.data);
-        message.error(response.data.error || response.data.message || t('aa.saveError'));
-      }
+      await saveDataArrayToServer(importedData, false); // false indicates new import (merge mode)
+      setImportedData([]);
     } catch (error) {
       console.error('Failed to save to server:', error);
       message.error(t('aa.saveError'));
@@ -501,7 +428,7 @@ const AAManager: React.FC<AAManagerProps> = () => {
         try {
           setLoading(true);
           // Use the parsed data directly instead of waiting for state update
-          await saveDataArrayToServer(dataArray);
+          await saveDataArrayToServer(dataArray, true); // true indicates editing mode
         } catch (error) {
           console.error('Auto save to server failed:', error);
           message.warning('Local data updated, but auto-save to server failed. Please manually click "Save to Server"');
@@ -516,24 +443,54 @@ const AAManager: React.FC<AAManagerProps> = () => {
   };
 
   // Helper function to save data array to server
-  const saveDataArrayToServer = async (aaData: any[]) => {
-    console.log('Preparing to save AA data:', aaData);
+  const saveDataArrayToServer = async (aaData: any[], isEditingMode = false) => {
+    console.log('🔍 saveDataArrayToServer - Input data:', {
+      count: aaData.length,
+      data: aaData.map(item => ({
+        date: item.date,
+        participantsCount: item.participants?.length,
+        totalParticipants: item.total_participants,
+        firstFewParticipants: item.participants?.slice(0, 3)?.map(p => p.name)
+      }))
+    });
     
     // Process each AA data, check if append is needed
     const processedData = [];
     for (const aaInfo of aaData) {
+      console.log('🔍 Processing individual AA data:', {
+        date: aaInfo.date,
+        participantsCount: aaInfo.participants?.length,
+        participantNames: aaInfo.participants?.map(p => p.name)
+      });
       const isTodayDate = aaInfo.date === new Date().toISOString().split('T')[0];
       
-      if (isTodayDate) {
+      // Check if this is an edited existing record (not new import)
+      // If user is editing existing data, we should overwrite, not merge
+      const isEditingExisting = isEditingMode;
+      
+      if (isTodayDate && !isEditingExisting) {
         try {
-          // Check if same date data exists
+          // Check if same date data exists - only merge for new imports
           const existingResponse = await aaApi.getByDate(aaInfo.date);
           if (existingResponse.data.success) {
             // Same date data exists, append and deduplicate
             const existingParticipants = existingResponse.data.data.participants || [];
             const newParticipants = aaInfo.participants || [];
+            
+            console.log('🔍 Merging data (new import):', {
+              existingCount: existingParticipants.length,
+              existingNames: existingParticipants.map(p => p.name),
+              newCount: newParticipants.length,
+              newNames: newParticipants.map(p => p.name)
+            });
+            
             const combinedParticipants = [...existingParticipants, ...newParticipants];
             const deduplicatedParticipants = deduplicateParticipants(combinedParticipants);
+            
+            console.log('🔍 After deduplication:', {
+              finalCount: deduplicatedParticipants.length,
+              finalNames: deduplicatedParticipants.map(p => p.name)
+            });
             
             console.log(`Found today's same date data, deduplicated after append: ${existingParticipants.length} + ${newParticipants.length} = ${deduplicatedParticipants.length}`);
             message.info(t('aa.mergedWithExistingData', { 
@@ -570,7 +527,14 @@ const AAManager: React.FC<AAManagerProps> = () => {
           });
         }
       } else {
-        // Non-today data, overwrite directly (but still need deduplication)
+        // Either non-today data OR editing existing data - overwrite directly
+        console.log('🔍 Overwriting data:', {
+          reason: isEditingExisting ? 'editing existing' : 'non-today data',
+          date: aaInfo.date,
+          participantsCount: aaInfo.participants?.length,
+          participantNames: aaInfo.participants?.map(p => p.name)
+        });
+        
         const deduplicatedParticipants = deduplicateParticipants(aaInfo.participants || []);
         processedData.push({
           ...aaInfo,
@@ -585,8 +549,6 @@ const AAManager: React.FC<AAManagerProps> = () => {
     
     if (response.data.success) {
       message.success(response.data.message || 'Successfully saved to server');
-      // Clear imported data since it's now saved to server
-      setImportedData([]);
       // Refresh cached data
       await globalAAManager.refreshData();
     } else {

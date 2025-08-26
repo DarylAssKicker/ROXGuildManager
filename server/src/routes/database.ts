@@ -145,4 +145,7 @@ router.delete('/clear', databaseController.clearAll);
 router.get('/export', databaseController.exportAccountData);
 router.post('/import', databaseController.clearAndImportData);
 
+// Remove key expirations
+router.post('/remove-expirations', databaseController.removeKeyExpirations);
+
 export default router;

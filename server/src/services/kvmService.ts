@@ -61,7 +61,7 @@ class KVMService {
         const key = `rox_guild:user:${userId}:kvm:${kvmInfo.date}`;
         
         // Store KVM data to Redis
-        await this.redis.setex(key, 86400 * 365, JSON.stringify(kvmInfo)); // Save for 1 year
+        await this.redis.set(key, JSON.stringify(kvmInfo)); // Persistent storage
         
         // Add to user's date index
         await this.redis.zadd(`rox_guild:user:${userId}:kvm:dates`, new Date(kvmInfo.date).getTime(), kvmInfo.date);

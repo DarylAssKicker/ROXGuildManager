@@ -354,7 +354,7 @@ class TemplateService {
 
       // Save to Redis
       const key = `template:${templateId}`;
-      await this.redis.setex(key, 86400 * 365, JSON.stringify(template)); // Save for 1 year
+      await this.redis.set(key, JSON.stringify(template)); // Persistent storage
       
       // Add to module index
       await this.redis.sadd(`templates:${template.module}`, templateId);
@@ -394,7 +394,7 @@ class TemplateService {
           if (template.isDefault) {
             template.isDefault = false;
             template.updatedAt = new Date().toISOString();
-            await this.redis.setex(key, 86400 * 365, JSON.stringify(template));
+            await this.redis.set(key, JSON.stringify(template));
           }
         }
       }
@@ -523,7 +523,7 @@ class TemplateService {
       template.updatedAt = new Date().toISOString();
 
       // Save updates
-      await this.redis.setex(key, 86400 * 365, JSON.stringify(template));
+      await this.redis.set(key, JSON.stringify(template));
 
       console.log(`Template updated successfully: ${template.name} (${templateId})`);
       return {

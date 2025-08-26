@@ -69,7 +69,12 @@
       "selectFile": "Please select a JSON file to import",
       "invalidFile": "Invalid file format, please select a JSON file",
       "exportDescription": "Export function will save all guild data under current account, including members, AA, GVG, KVM and other information.",
-      "importDescription": "Import function will clear all current data and import new data, please proceed with caution."
+      "importDescription": "Import function will clear all current data and import new data, please proceed with caution.",
+      "removeExpirations": "Remove Key Expirations",
+      "removeExpirationsTitle": "Remove Key Expirations",
+      "removeExpirationsContent": "This will remove expiration time from all existing Redis keys for your account. This operation cannot be undone. Are you sure you want to continue?",
+      "removeExpirationsSuccess": "Successfully removed expiration time from existing keys!",
+      "removeExpirationsFailed": "Failed to remove key expirations, please try again"
     }
   },
   "common": {

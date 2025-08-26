@@ -69,7 +69,12 @@
       "selectFile": "请选择要导入的JSON文件",
       "invalidFile": "无效的文件格式，请选择JSON文件",
       "exportDescription": "导出功能将会保存当前账号下所有的公会数据，包括成员、AA、GVG、KVM等信息。",
-      "importDescription": "导入功能将会清空当前所有数据并导入新的数据，请谨慎操作。"
+      "importDescription": "导入功能将会清空当前所有数据并导入新的数据，请谨慎操作。",
+      "removeKeyExpirations": "移除Key过期时间",
+      "removeExpirationsConfirmTitle": "确认移除过期时间",
+      "removeExpirationsConfirmContent": "此操作将移除所有Redis缓存数据的过期时间，使数据永久保存。确定要继续吗？",
+      "removeExpirationsSuccess": "成功移除所有Key的过期时间！",
+      "removeExpirationsError": "移除过期时间失败，请重试"
     }
   },
   "common": {

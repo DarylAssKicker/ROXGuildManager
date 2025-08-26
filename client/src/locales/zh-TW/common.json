@@ -69,7 +69,12 @@
       "selectFile": "請選擇要匯入的JSON檔案",
       "invalidFile": "無效的檔案格式，請選擇JSON檔案",
       "exportDescription": "匯出功能將會儲存目前帳號下所有的公會資料，包括成員、AA、GVG、KVM等資訊。",
-      "importDescription": "匯入功能將會清空目前所有資料並匯入新的資料，請謹慎操作。"
+      "importDescription": "匯入功能將會清空目前所有資料並匯入新的資料，請謹慎操作。",
+      "removeKeyExpirations": "移除Key過期時間",
+      "removeExpirationsConfirmTitle": "確認移除過期時間",
+      "removeExpirationsConfirmContent": "此操作將移除所有Redis快取資料的過期時間，使資料永久保存。確定要繼續嗎？",
+      "removeExpirationsSuccess": "成功移除所有Key的過期時間！",
+      "removeExpirationsError": "移除過期時間失敗，請重試"
     }
   },
   "common": {

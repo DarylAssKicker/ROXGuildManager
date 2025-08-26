@@ -828,6 +828,42 @@ export class DatabaseController {
   }
 
   /**
+   * Remove expiration time from existing Redis keys
+   */
+  async removeKeyExpirations(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'User not authenticated'
+        });
+        return;
+      }
+      
+      const dataUserId = getDataUserId(req);
+      const success = await databaseService.removeKeyExpirations(dataUserId);
+      
+      if (success) {
+        res.json({
+          success: true,
+          message: 'Successfully removed expiration time from existing keys'
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to remove key expirations'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to remove key expirations:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to remove key expirations'
+      });
+    }
+  }
+
+  /**
    * Download user images as zip
    */
   async downloadImages(req: Request, res: Response): Promise<void> {

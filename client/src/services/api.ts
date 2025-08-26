@@ -394,7 +394,10 @@ export const dataApi = {
   exportData: () => apiClient.get('/database/export'),
   
   // Clear and import account data
-  importData: (data: any) => apiClient.post('/database/import', { data })
+  importData: (data: any) => apiClient.post('/database/import', { data }),
+  
+  // Remove expiration time from existing Redis keys
+  removeKeyExpirations: () => apiClient.post('/database/remove-expirations')
 };
 
 export default apiClient;

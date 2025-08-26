@@ -76,7 +76,7 @@ class AAService {
         const key = `rox_guild:user:${dataUserId}:aa:${aaInfo.date}`;
         
         // Store AA data to Redis
-        await this.redis.setex(key, 86400 * 365, JSON.stringify(aaInfo)); // Save for 1 year
+        await this.redis.set(key, JSON.stringify(aaInfo)); // Persistent storage
         
         // Add to user's date index
         await this.redis.zadd(`rox_guild:user:${dataUserId}:aa:dates`, new Date(aaInfo.date).getTime(), aaInfo.date);

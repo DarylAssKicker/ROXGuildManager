@@ -17,6 +17,7 @@ const GuildSettings: React.FC = () => {
   const [importLoading, setImportLoading] = useState(false);
   const [downloadImagesLoading, setDownloadImagesLoading] = useState(false);
   const [uploadImagesLoading, setUploadImagesLoading] = useState(false);
+  const [removeExpirationsLoading, setRemoveExpirationsLoading] = useState(false);
   const [guildName, setGuildName] = useState<string>('ROXGuild');
   const [backgroundImage, setBackgroundImage] = useState<string>(''); // Complete URL for display
   const [backgroundImagePath, setBackgroundImagePath] = useState<string>(''); // Relative path for database storage
@@ -351,6 +352,33 @@ const GuildSettings: React.FC = () => {
     }
   };
 
+  // Handle remove key expirations
+  const handleRemoveExpirations = async () => {
+    Modal.confirm({
+      title: t('settings.guild.removeExpirationsTitle'),
+      content: t('settings.guild.removeExpirationsContent'),
+      icon: <ExclamationCircleOutlined />,
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      onOk: async () => {
+        setRemoveExpirationsLoading(true);
+        try {
+          const response = await dataApi.removeKeyExpirations();
+          if (response.data.success) {
+            message.success(t('settings.guild.removeExpirationsSuccess'));
+          } else {
+            message.error(response.data.error || t('settings.guild.removeExpirationsFailed'));
+          }
+        } catch (error) {
+          console.error('Remove expirations failed:', error);
+          message.error(t('settings.guild.removeExpirationsFailed'));
+        } finally {
+          setRemoveExpirationsLoading(false);
+        }
+      }
+    });
+  };
+
   return (
     <div style={{ padding: '24px', maxWidth: '600px' }}>
       <Title level={4} style={{ marginBottom: '24px' }}>{t('settings.guild.title')}</Title>
@@ -504,6 +532,15 @@ const GuildSettings: React.FC = () => {
             loading={uploadImagesLoading}
           >
             Upload Images
+          </Button>
+          
+          <Button 
+            danger
+            icon={<DeleteOutlined />}
+            onClick={handleRemoveExpirations}
+            loading={removeExpirationsLoading}
+          >
+            {t('settings.guild.removeExpirations')}
           </Button>
         </Space>
 

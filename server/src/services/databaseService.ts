@@ -242,7 +242,7 @@ export class DatabaseService {
       const key = `ocr:${sessionId}`;
       const data = JSON.stringify(result);
       
-      await this.redis.setex(key, 3600, data); // Expires in 1 hour
+      await this.redis.set(key, data); // Persistent storage
       console.log(`✅ Saved OCR result: ${sessionId}`);
       return true;
     } catch (error) {
@@ -286,7 +286,13 @@ export class DatabaseService {
       const cacheKey = `cache:${key}`;
       const jsonValue = JSON.stringify(value);
       
-      await this.redis.setex(cacheKey, expireSeconds, jsonValue);
+      if (expireSeconds > 0) {
+        // Set with expiration
+        await this.redis.setex(cacheKey, expireSeconds, jsonValue);
+      } else {
+        // Set without expiration (permanent)
+        await this.redis.set(cacheKey, jsonValue);
+      }
       return true;
     } catch (error) {
       console.error('Cache operation failed:', error);
@@ -1307,6 +1313,106 @@ export class DatabaseService {
       return true;
     } catch (error) {
       console.error('Failed to clear account data:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Remove expiration time from existing Redis keys for a user
+   */
+  async removeKeyExpirations(userId: string): Promise<boolean> {
+    if (!this.redis) return false;
+
+    try {
+      // Get all keys for this user
+      const userPatterns = [
+        `user:${userId}:aa:*`,
+        `user:${userId}:gvg:*`,
+        `user:${userId}:kvm:*`,
+        `user:${userId}:guild:*`,
+        `user:${userId}:groups`,
+        `user:${userId}:parties`,
+        `user:${userId}:cache:*`,
+        `user:${userId}:ocr:*`,
+        `user:${userId}:template:*`
+      ];
+
+      // Public/shared keys that should also have expiration removed
+      const publicPatterns = [
+        'rox_guild:cache:classes',
+        'template:*'
+      ];
+
+      let totalKeysFound = 0;
+      let totalKeysProcessed = 0;
+      let keysAlreadyPersistent = 0;
+      
+      // Process user-specific keys
+      for (const pattern of userPatterns) {
+        const keys = await this.redis.keys(pattern);
+        totalKeysFound += keys.length;
+        
+        for (const key of keys) {
+          // Check if key has TTL first
+          const ttl = await this.redis.ttl(key);
+          
+          if (ttl > 0) {
+            // Key has expiration, remove it
+            const result = await this.redis.persist(key);
+            if (result === 1) {
+              console.log(`✅ Removed expiration from user key: ${key} (was ${ttl}s)`);
+              totalKeysProcessed++;
+            }
+          } else if (ttl === -1) {
+            // Key already persistent (no expiration)
+            keysAlreadyPersistent++;
+          }
+        }
+      }
+
+      // Process public/shared keys (need Redis client without keyPrefix)
+      const Redis = require('ioredis');
+      const redisNoPrefix = new Redis({
+        host: this.config.host,
+        port: this.config.port,
+        password: this.config.password,
+        db: this.config.db,
+        maxRetriesPerRequest: this.config.maxRetriesPerRequest
+      });
+      
+      try {
+        for (const pattern of publicPatterns) {
+          const keys = await redisNoPrefix.keys(pattern);
+          totalKeysFound += keys.length;
+          
+          for (const key of keys) {
+            // Check if key has TTL first
+            const ttl = await redisNoPrefix.ttl(key);
+            
+            if (ttl > 0) {
+              // Key has expiration, remove it
+              const result = await redisNoPrefix.persist(key);
+              if (result === 1) {
+                console.log(`✅ Removed expiration from public key: ${key} (was ${ttl}s)`);
+                totalKeysProcessed++;
+              }
+            } else if (ttl === -1) {
+              // Key already persistent (no expiration)
+              keysAlreadyPersistent++;
+            }
+          }
+        }
+      } finally {
+        await redisNoPrefix.disconnect();
+      }
+
+      console.log(`🔧 Key expiration removal summary for user ${userId}:`);
+      console.log(`   - Total keys found: ${totalKeysFound}`);
+      console.log(`   - Keys with expiration removed: ${totalKeysProcessed}`);
+      console.log(`   - Keys already persistent: ${keysAlreadyPersistent}`);
+      return true;
+    } catch (error) {
+      console.error('Failed to remove key expirations:', error);
       return false;
     }
   }

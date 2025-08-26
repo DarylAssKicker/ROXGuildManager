@@ -102,7 +102,7 @@ export const createClass = async (req: Request, res: Response) => {
     };
     
     const updatedClasses = [...classes, newClass];
-    await databaseService.setCache('classes', updatedClasses, 86400 * 30); // Expires in 30 days
+    await databaseService.setCache('classes', updatedClasses, 0); // Permanent storage
     
     return res.status(201).json({
       success: true,
@@ -164,7 +164,7 @@ export const updateClass = async (req: Request, res: Response) => {
     const updatedClasses = [...classes];
     updatedClasses[classIndex] = updatedClass;
     
-    await databaseService.setCache('classes', updatedClasses, 86400 * 30); // Expires in 30 days
+    await databaseService.setCache('classes', updatedClasses, 0); // Permanent storage
     
     return res.json({
       success: true,
@@ -205,7 +205,7 @@ export const deleteClass = async (req: Request, res: Response) => {
     }
     
     const updatedClasses = classes.filter((c: ClassInfo) => c.id !== id);
-    await databaseService.setCache('classes', updatedClasses, 86400 * 30); // Expires in 30 days
+    await databaseService.setCache('classes', updatedClasses, 0); // Permanent storage
     
     return res.json({
       success: true,
@@ -249,7 +249,7 @@ export const initializeDefaultClasses = async () => {
       { id: uuidv4(), name: 'Stalker', color: '#E6E6FA' }, // Lavender
     ];
     
-    await databaseService.setCache('classes', defaultClasses, 86400 * 30); // Expires in 30 days
+    await databaseService.setCache('classes', defaultClasses, 0); // Permanent storage
     console.log('Default class data initialization successful');
   } catch (error) {
     console.error('Failed to initialize default class data:', error);

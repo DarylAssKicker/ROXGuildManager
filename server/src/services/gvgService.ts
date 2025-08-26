@@ -61,7 +61,7 @@ class GVGService {
         const key = `rox_guild:user:${userId}:gvg:${gvgInfo.date}`;
         
         // Store GVG data to Redis
-        await this.redis.setex(key, 86400 * 365, JSON.stringify(gvgInfo)); // Save for 1 year
+        await this.redis.set(key, JSON.stringify(gvgInfo)); // Persistent storage
         
         // Add to user's date index
         await this.redis.zadd(`rox_guild:user:${userId}:gvg:dates`, new Date(gvgInfo.date).getTime(), gvgInfo.date);

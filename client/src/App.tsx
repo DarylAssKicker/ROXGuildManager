@@ -359,7 +359,7 @@ const App: React.FC = () => {
                 {user?.username}
               </Button>
             </Dropdown>
-            <span style={{ color: '#666' }}>v1.3.0</span>
+            <span style={{ color: '#666' }}>v1.3.1</span>
           </Space>
           </div>
         </Header>
